@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="form-section">
+    <h1>Create Account</h1>
+
+    <form method="POST" class="post-form">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="campus.guitar" required>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+
+        <label for="major">Major</label>
+        <input type="text" id="major" name="major" placeholder="Finance" required>
+
+        <label for="instrument">Instrument</label>
+        <input type="text" id="instrument" name="instrument" placeholder="Guitar">
+
+        <label for="favorite_genre">Favorite Genre</label>
+        <input type="text" id="favorite_genre" name="favorite_genre" placeholder="Reggae, Indie, Jazz">
+
+        <label for="bio">Bio</label>
+        <textarea id="bio" name="bio" placeholder="Tell people about your music style..."></textarea>
+
+        <button type="submit">Sign Up</button>
+    </form>
+</section>
+{% endblock %}

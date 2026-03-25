@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="feed-section">
+    <h2>Search Musicians</h2>
+
+    <form method="GET" action="{{ url_for('search') }}" style="margin-bottom: 20px;">
+        <input
+            type="text"
+            name="q"
+            placeholder="Search by username, instrument, major, or genre"
+            value="{{ query }}"
+            style="padding:10px; width:280px;"
+        >
+        <button type="submit">Search</button>
+    </form>
+
+    {% if query %}
+        <h3>Results for "{{ query }}"</h3>
+
+        {% if users %}
+            <div style="display:grid; gap:16px;">
+                {% for user in users %}
+                    <div class="post-card">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            {% if user["profile_image"] %}
+                                <img
+                                    src="{{ url_for('static', filename='uploads/' ~ user['profile_image']) }}"
+                                    alt="Profile picture"
+                                    style="width:56px; height:56px; object-fit:cover; border-radius:50%;"
+                                >
+                            {% else %}
+                                <div class="avatar" style="width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                    {{ user["username"][0].upper() }}
+                                </div>
+                            {% endif %}
+
+                            <div>
+                                <p style="margin:0;">
+                                    <strong>
+                                        <a href="{{ url_for('profile', username=user['username']) }}">
+                                            @{{ user["username"] }}
+                                        </a>
+                                    </strong>
+                                </p>
+                                <p style="margin:0;">Instrument: {{ user["instrument"] or "Not listed" }}</p>
+                                <p style="margin:0;">Major: {{ user["major"] or "Not listed" }}</p>
+                                <p style="margin:0;">Genre: {{ user["favorite_genre"] or "Not listed" }}</p>
+                            </div>
+                        </div>
+
+                        {% if session.get("user_id") != user["id"] %}
+                            <div style="margin-top:12px;">
+                                <a class="button-link" href="{{ url_for('private_messages', user_id=user['id']) }}">
+                                    Message
+                                </a>
+                                <a class="button-link" href="{{ url_for('profile', username=user['username']) }}">
+                                    View Profile
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No musicians found.</p>
+        {% endif %}
+    {% else %}
+        <p>Search for students by instrument, username, major, or favorite genre.</p>
+    {% endif %}
+</section>
+{% endblock %}

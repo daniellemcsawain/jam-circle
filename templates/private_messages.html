@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="feed-section">
+    <h2>Chat with @{{ other_user["username"] }}</h2>
+
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('private_messages', user_id=other_user['id']) }}">
+        <input type="text" name="message_text" placeholder="Type a message">
+        <input type="file" name="attachment">
+        <button type="submit">Send</button>
+    </form>
+
+    <hr>
+
+    {% if messages %}
+        {% for msg in messages %}
+            <div class="post-card" style="margin-bottom: 16px;">
+                <p><strong>@{{ msg["username"] }}</strong></p>
+
+                {% if msg["message_text"] %}
+                    <p>{{ msg["message_text"] }}</p>
+                {% endif %}
+
+                {% if msg["file_name"] %}
+                    {% if msg["file_type"] in ['jpg', 'jpeg', 'png', 'gif'] %}
+                        <img
+                            src="{{ url_for('static', filename='uploads/' ~ msg['file_name']) }}"
+                            alt="attachment"
+                            style="max-width: 300px; border-radius: 10px;"
+                        >
+
+                    {% elif msg["file_type"] in ['mp4', 'mov', 'webm'] %}
+                        <video controls style="max-width: 320px;">
+                            <source src="{{ url_for('static', filename='uploads/' ~ msg['file_name']) }}">
+                        </video>
+
+                    {% elif msg["file_type"] in ['mp3', 'wav', 'm4a'] %}
+                        <audio controls>
+                            <source src="{{ url_for('static', filename='uploads/' ~ msg['file_name']) }}">
+                        </audio>
+
+                    {% else %}
+                        <p>
+                            <a href="{{ url_for('static', filename='uploads/' ~ msg['file_name']) }}" target="_blank">
+                                Download {{ msg["file_name"] }}
+                            </a>
+                        </p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No messages yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

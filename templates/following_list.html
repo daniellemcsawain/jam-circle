@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="feed-section">
+    <h2>@{{ profile_user["username"] }} is following</h2>
+
+    {% if users %}
+        <div style="display:grid; gap:16px;">
+            {% for user in users %}
+                <div class="post-card">
+                    <p>
+                        <strong>
+                            <a href="{{ url_for('profile', username=user['username']) }}">
+                                @{{ user["username"] }}
+                            </a>
+                        </strong>
+                    </p>
+                    <p>Instrument: {{ user["instrument"] or "Not listed" }}</p>
+                    <p>Major: {{ user["major"] or "Not listed" }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Not following anyone yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ group.name }}</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    <input type="text" name="message_text" placeholder="Send a message to the group">
+    <input type="file" name="attachment">
+    <button type="submit">Send</button>
+</form>
+
+<hr>
+
+{% for msg in messages %}
+    <div style="margin-bottom: 20px; padding: 10px; background: #1f1f1f; border-radius: 12px;">
+        <strong>@{{ msg.username }}</strong>
+
+        {% if msg.message_text %}
+            <p>{{ msg.message_text }}</p>
+        {% endif %}
+
+        {% if msg.file_name %}
+            {% if msg.file_type in ['jpg', 'jpeg', 'png', 'gif'] %}
+                <img src="{{ url_for('static', filename='uploads/' ~ msg.file_name) }}" width="250">
+            {% elif msg.file_type in ['mp4', 'mov'] %}
+                <video width="300" controls>
+                    <source src="{{ url_for('static', filename='uploads/' ~ msg.file_name) }}">
+                </video>
+            {% else %}
+                <a href="{{ url_for('static', filename='uploads/' ~ msg.file_name) }}" target="_blank">
+                    Download {{ msg.file_name }}
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endfor %}
+{% endblock %}

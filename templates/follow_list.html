@@ -1,0 +1,96 @@
+@app.route("/followers/<username>")
+def followers_list(username):
+    conn = get_db_connection()
+
+    user = conn.execute("""
+        SELECT *
+        FROM users
+        WHERE username = ?
+    """, (username,)).fetchone()
+
+    if not user:
+        conn.close()
+        flash("User not found.")
+        return redirect(url_for("home"))
+
+    followers = conn.execute("""
+        SELECT users.id, users.username, users.profile_image, users.instrument, users.major
+        FROM follows
+        JOIN users ON follows.follower_id = users.id
+        WHERE follows.following_id = ?
+        ORDER BY users.username ASC
+    """, (user["id"],)).fetchall()
+
+    conn.close()
+    return render_template(
+        "follow_list.html",
+        page_title=f"{username}'s Followers",
+        people=followers,
+        profile_user=user
+    )
+
+
+@app.route("/following/<username>")
+def following_list(username):
+    conn = get_db_connection()
+
+    user = conn.execute("""
+        SELECT *
+        FROM users
+        WHERE username = ?
+    """, (username,)).fetchone()
+
+    if not user:
+        conn.close()
+        flash("User not found.")
+        return redirect(url_for("home"))
+
+    following = conn.execute("""
+        SELECT users.id, users.username, users.profile_image, users.instrument, users.major
+        FROM follows
+        JOIN users ON follows.following_id = users.id
+        WHERE follows.follower_id = ?
+        ORDER BY users.username ASC
+    """, (user["id"],)).fetchall()
+
+    conn.close()
+    return render_template(
+        "follow_list.html",
+        page_title=f"{username} is Following",
+        people=following,
+        profile_user=user
+    )
+    {% extends "base.html" %}
+
+{% block content %}
+<h2>Followers of @{{ profile_user.username }}</h2>
+
+{% if users %}
+    {% for user in users %}
+        <p>
+            <a href="{{ url_for('profile', username=user['username']) }}">
+                @{{ user['username'] }}
+            </a>
+        </p>
+    {% endfor %}
+{% else %}
+    <p>No followers yet.</p>
+{% endif %}
+{% endblock %}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Followers of @{{ profile_user.username }}</h2>
+
+{% if users %}
+    {% for user in users %}
+        <p>
+            <a href="{{ url_for('profile', username=user['username']) }}">
+                @{{ user['username'] }}
+            </a>
+        </p>
+    {% endfor %}
+{% else %}
+    <p>No followers yet.</p>
+{% endif %}
+{% endblock %}

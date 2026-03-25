@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="form-section">
+    <h1>Post a Clip</h1>
+
+    <form method="POST" enctype="multipart/form-data" class="post-form">
+        
+        <label for="caption">Caption</label>
+        <textarea 
+            id="caption" 
+            name="caption" 
+            placeholder="Write something about your clip..." 
+            required
+        ></textarea>
+
+        <label for="clip">Upload Clip (optional)</label>
+        <input 
+            type="file" 
+            id="clip" 
+            name="clip" 
+            accept=".mp4,.mov,.webm,.mp3,.wav,.m4a,.jpg,.jpeg,.png"
+        >
+
+        <button type="submit">Post</button>
+    </form>
+</section>
+{% endblock %}

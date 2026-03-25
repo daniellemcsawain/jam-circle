@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="feed-section">
+    <h2>Your Messages</h2>
+
+    {% if conversations %}
+        {% for user in conversations %}
+            <div class="post-card" style="margin-bottom: 16px;">
+                <p>
+                    <a href="{{ url_for('private_messages', user_id=user['id']) }}">
+                        @{{ user["username"] }}
+                    </a>
+                </p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No conversations yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

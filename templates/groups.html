@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="feed-section">
+    <h1>Jam Circles</h1>
+
+    {% if groups %}
+        {% for group in groups %}
+            <div class="post">
+                <h2>{{ group["name"] }}</h2>
+                <p>{{ group["description"] }}</p>
+                <p>Members: {{ group["member_count"] }}</p>
+
+                <form method="POST" action="{{ url_for('join_group', group_id=group['id']) }}">
+                    <button type="submit">Join Group</button>
+                </form>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No groups yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

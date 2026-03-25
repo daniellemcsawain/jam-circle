@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="feed-section">
+    <h1>Chat with @{{ other_user["username"] }}</h1>
+
+    <div class="chat-box">
+        {% if messages %}
+            {% for message in messages %}
+                <p>
+                    <strong>@{{ message["sender_username"] }}</strong>
+                    {{ message["content"] }}
+                </p>
+            {% endfor %}
+        {% else %}
+            <p>No messages yet.</p>
+        {% endif %}
+    </div>
+
+    <form method="POST" class="chat-form">
+        <input type="text" name="content" placeholder="Write a message..." required>
+        <button type="submit">Send</button>
+    </form>
+</section>
+{% endblock %}

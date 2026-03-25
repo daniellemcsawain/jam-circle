@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="profile-card">
+    <h1>{{ group["name"] }}</h1>
+    <p>{{ group["description"] }}</p>
+
+    {% if session.get('username') and not is_member %}
+        <a class="button-link" href="{{ url_for('join_group', group_id=group['id']) }}">Join This Group</a>
+    {% endif %}
+</section>
+
+<section class="feed-section">
+    <h2>Members</h2>
+
+    {% if members %}
+        {% for member in members %}
+        <div class="post-card">
+            <a class="username-link" href="{{ url_for('profile', username=member['username']) }}">
+                @{{ member["username"] }}
+            </a>
+            <p class="major-text">
+                {{ member["major"] }}{% if member["instrument"] %} • {{ member["instrument"] }}{% endif %}
+            </p>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No members yet.</p>
+    {% endif %}
+</section>
+
+<section class="feed-section">
+    <h2>Group Chat</h2>
+
+    <div id="chat-box" class="chat-box">
+        {% for message in messages %}
+            <p><strong>@{{ message["username"] }}</strong>: {{ message["content"] }}</p>
+        {% endfor %}
+    </div>
+
+    {% if session.get('user_id') and is_member %}
+        <div class="chat-form">
+            <input type="text" id="chat-input" placeholder="Type a message...">
+            <button type="button" onclick="sendMessage()">Send</button>
+        </div>
+
+        <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+        <script>
+            const socket = io();
+            const groupId = {{ group["id"] }};
+
+            socket.emit("join_group_room", { group_id: groupId });
+
+            socket.on("receive_group_message", function(data) {
+                const chatBox = document.getElementById("chat-box");
+                const message = document.createElement("p");
+                message.innerHTML = "<strong>@" + data.username + "</strong>: " + data.content;
+                chatBox.appendChild(message);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+
+            function sendMessage() {
+                const input = document.getElementById("chat-input");
+                const content = input.value.trim();
+
+                if (!content) return;
+
+                socket.emit("send_group_message", {
+                    group_id: groupId,
+                    content: content
+                });
+
+                input.value = "";
+            }
+        </script>
+    {% elif session.get('user_id') %}
+        <p>Join this group to use the chat.</p>
+    {% else %}
+        <p>Log in and join the group to chat.</p>
+    {% endif %}
+</section>
+{% endblock %}
