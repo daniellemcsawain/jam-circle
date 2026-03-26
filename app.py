@@ -23,12 +23,15 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 socketio = SocketIO(app, async_mode="threading")
 
+
 # -------------------------
 # PERMANENT STORAGE SETUP
 # -------------------------
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+# On Render, use the mounted disk at /data
+# Locally, use a folder inside your project
 if os.environ.get("RENDER"):
     DATA_DIR = "/data"
 else:
@@ -373,7 +376,7 @@ def post():
 
     return render_template("post.html")
 
-@app.route("/uploads/<path:filename>")
+@app.route("/uploads/<filename>")
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
