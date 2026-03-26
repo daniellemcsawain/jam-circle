@@ -29,16 +29,23 @@ socketio = SocketIO(app)
 # PERMANENT STORAGE SETUP
 # -------------------------
 
-# For uploads, use a persistent disk mounted in Render at /var/data
-DATA_DIR = os.environ.get("DATA_DIR", "/var/data")
-UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
-
-# For production, use Render Postgres via DATABASE_URL
-DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-
-# Optional local fallback only for testing on your computer
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-SQLITE_FALLBACK = os.path.join(BASE_DIR, "campus_jam.db")
+
+# Detect if running on Render
+if os.environ.get("RENDER"):
+    DATA_DIR = "/data"
+else:
+    DATA_DIR = os.path.join(BASE_DIR, "local_data")
+
+# Create main data folder
+os.makedirs(DATA_DIR, exist_ok=True)
+
+# Database path (persistent)
+DATABASE = os.path.join(DATA_DIR, "campus_jam.db")
+
+# Uploads folder (persistent)
+UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {
     "mp4", "mov", "webm",
