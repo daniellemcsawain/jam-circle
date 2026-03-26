@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import sqlite3
 import uuid
@@ -18,7 +21,7 @@ from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
-app.secret_key = "change-this-later"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 socketio = SocketIO(app)
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
