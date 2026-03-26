@@ -562,6 +562,29 @@ def add_comment(post_id):
 
     conn = get_db_connection()
 
+    # 🔥 CHECK POST EXISTS
+    post = conn.execute(
+        "SELECT id FROM posts WHERE id = ?",
+        (post_id,)
+    ).fetchone()
+
+    if not post:
+        conn.close()
+        flash("Post does not exist")
+        return redirect(url_for("home"))
+
+    # 🔥 CHECK USER EXISTS
+    user = conn.execute(
+        "SELECT id FROM users WHERE id = ?",
+        (session["user_id"],)
+    ).fetchone()
+
+    if not user:
+        conn.close()
+        flash("User not found — please log in again")
+        return redirect(url_for("login"))
+
+    # ✅ SAFE INSERT
     conn.execute(
         "INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)",
         (post_id, session["user_id"], content)
@@ -573,35 +596,35 @@ def add_comment(post_id):
     return redirect(request.referrer or url_for("home"))
 
 
-@app.route("/delete_comment/<int:comment_id>", methods=["POST"])
+@app.route("/comment/delete/<int:comment_id>", methods=["POST"])
 @login_required
 def delete_comment(comment_id):
     conn = get_db_connection()
 
-    comment = conn.execute("""
-        SELECT *
-        FROM comments
-        WHERE id = ?
-    """, (comment_id,)).fetchone()
+    comment = conn.execute(
+        "SELECT * FROM comments WHERE id = ?",
+        (comment_id,)
+    ).fetchone()
 
     if not comment:
         conn.close()
-        flash("Comment not found.")
-        return redirect(request.referrer or url_for("home"))
+        flash("Comment not found")
+        return redirect(url_for("home"))
 
+    # Only allow owner to delete
     if comment["user_id"] != session["user_id"]:
         conn.close()
-        flash("You can only delete your own comments.")
-        return redirect(request.referrer or url_for("home"))
+        flash("Not allowed")
+        return redirect(url_for("home"))
 
-    conn.execute("""
-        DELETE FROM comments
-        WHERE id = ?
-    """, (comment_id,))
+    conn.execute(
+        "DELETE FROM comments WHERE id = ?",
+        (comment_id,)
+    )
+
     conn.commit()
     conn.close()
 
-    flash("Comment deleted.")
     return redirect(request.referrer or url_for("home"))
 
 
