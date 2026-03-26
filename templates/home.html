@@ -18,7 +18,7 @@
                 <div class="post-header">
                     {% if post["profile_image"] %}
                         <img
-                            src="{{ url_for('static', filename='uploads/' ~ post['profile_image']) }}"
+                            src="{{ url_for('uploaded_file', filename=post['profile_image']) }}"
                             alt="Profile picture"
                             style="width:42px; height:42px; object-fit:cover; border-radius:50%;"
                         >
@@ -27,7 +27,9 @@
                             {{ post["username"][0].upper() }}
                         </div>
                     {% endif %}
-
+                 <div style="margin: 18px 0;">
+    <a href="{{ url_for('post') }}" class="main-btn">+ Create Post</a>
+</div>
                     <div>
                         <p style="margin:0;">
                             <strong>
@@ -50,19 +52,19 @@
 
                     {% if ext in ["jpg", "jpeg", "png", "gif"] %}
                         <img
-                            src="{{ url_for('static', filename='uploads/' ~ post['clip_filename']) }}"
+                            src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}"
                             alt="Post image"
                             class="media-preview"
                         >
 
                     {% elif ext in ["mp4", "mov", "webm"] %}
                         <video controls class="media-preview">
-                            <source src="{{ url_for('static', filename='uploads/' ~ post['clip_filename']) }}">
+                            <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
                         </video>
 
                     {% elif ext in ["mp3", "wav", "m4a"] %}
                         <audio controls class="audio-preview">
-                            <source src="{{ url_for('static', filename='uploads/' ~ post['clip_filename']) }}">
+                            <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
                         </audio>
                     {% endif %}
                 {% endif %}

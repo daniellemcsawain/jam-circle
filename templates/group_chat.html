@@ -21,13 +21,13 @@
 
         {% if msg.file_name %}
             {% if msg.file_type in ['jpg', 'jpeg', 'png', 'gif'] %}
-                <img src="{{ url_for('static', filename='uploads/' ~ msg.file_name) }}" width="250">
+                <img src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}" width="250">
             {% elif msg.file_type in ['mp4', 'mov'] %}
                 <video width="300" controls>
-                    <source src="{{ url_for('static', filename='uploads/' ~ msg.file_name) }}">
+                    <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
                 </video>
             {% else %}
-                <a href="{{ url_for('static', filename='uploads/' ~ msg.file_name) }}" target="_blank">
+                <a href="{{ url_for('uploaded_file', filename=post['clip_filename']) }}" target="_blank">
                     Download {{ msg.file_name }}
                 </a>
             {% endif %}

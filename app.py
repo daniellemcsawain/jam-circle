@@ -14,6 +14,7 @@ from flask import (
     url_for,
     session,
     flash,
+    send_from_directory,
 )
 from flask_socketio import SocketIO, join_room
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -24,9 +25,20 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 socketio = SocketIO(app)
 
+# -------------------------
+# PERMANENT STORAGE SETUP
+# -------------------------
+
+# For uploads, use a persistent disk mounted in Render at /var/data
+DATA_DIR = os.environ.get("DATA_DIR", "/var/data")
+UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
+
+# For production, use Render Postgres via DATABASE_URL
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
+# Optional local fallback only for testing on your computer
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DATABASE = os.path.join(BASE_DIR, "campus_jam.db")
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
+SQLITE_FALLBACK = os.path.join(BASE_DIR, "campus_jam.db")
 
 ALLOWED_EXTENSIONS = {
     "mp4", "mov", "webm",
@@ -42,10 +54,19 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    """
+    Uses Postgres in production if DATABASE_URL exists.
+    Falls back to SQLite locally if DATABASE_URL is missing.
+    """
+    if DATABASE_URL:
+        import psycopg2
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    else:
+        conn = sqlite3.connect(SQLITE_FALLBACK)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        return conn
 
 
 def allowed_file(filename):
@@ -283,6 +304,36 @@ def fetch_posts_with_counts(conn, user_id=None, only_username=None):
 
     return posts, comments_by_post, liked_post_ids
 
+@app.route("/post", methods=["GET", "POST"])
+def post():
+    if "username" not in session:
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        caption = request.form.get("caption")
+        file = request.files.get("clip")
+
+        filename = None
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(UPLOAD_FOLDER, filename))
+
+        conn = sqlite3.connect(DATABASE)
+        conn.execute(
+            "INSERT INTO posts (username, caption, clip_filename) VALUES (?, ?, ?)",
+            (session["username"], caption, filename)
+        )
+        conn.commit()
+        conn.close()
+
+        flash("Post uploaded successfully!")
+        return redirect(url_for("home"))
+
+    return render_template("post.html")
+
+@app.route("/uploads/<path:filename>")
+def uploaded_file(filename):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 @app.route("/")
 def home():

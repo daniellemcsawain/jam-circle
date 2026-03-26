@@ -24,24 +24,24 @@
                 {% if msg["file_name"] %}
                     {% if msg["file_type"] in ['jpg', 'jpeg', 'png', 'gif'] %}
                         <img
-                            src="{{ url_for('static', filename='uploads/' ~ msg['file_name']) }}"
+                            src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}"
                             alt="attachment"
                             style="max-width: 300px; border-radius: 10px;"
                         >
 
                     {% elif msg["file_type"] in ['mp4', 'mov', 'webm'] %}
                         <video controls style="max-width: 320px;">
-                            <source src="{{ url_for('static', filename='uploads/' ~ msg['file_name']) }}">
+                            <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
                         </video>
 
                     {% elif msg["file_type"] in ['mp3', 'wav', 'm4a'] %}
                         <audio controls>
-                            <source src="{{ url_for('static', filename='uploads/' ~ msg['file_name']) }}">
+                            <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
                         </audio>
 
                     {% else %}
                         <p>
-                            <a href="{{ url_for('static', filename='uploads/' ~ msg['file_name']) }}" target="_blank">
+                            <a href="{{ url_for('uploaded_file', filename=post['clip_filename']) }}" target="_blank">
                                 Download {{ msg["file_name"] }}
                             </a>
                         </p>

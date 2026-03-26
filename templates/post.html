@@ -1,25 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="form-section">
-    <h1>Post a Clip</h1>
+<section class="form-card">
+    <h2>Create a Post</h2>
 
-    <form method="POST" enctype="multipart/form-data" class="post-form">
+    <form method="POST" enctype="multipart/form-data">
         <label for="caption">Caption</label>
-        <textarea
-            id="caption"
-            name="caption"
-            placeholder="Write something about your clip..."
-            required
-        ></textarea>
+        <textarea name="caption" id="caption" rows="4" placeholder="Say something about your clip..."></textarea>
 
-        <label for="clip">Upload Clip (optional)</label>
-        <input
-            type="file"
-            id="clip"
-            name="clip"
-            accept=".mp4,.mov,.webm,.mp3,.wav,.m4a,.jpg,.jpeg,.png,.gif"
-        >
+        <label for="clip">Upload file</label>
+        <input type="file" name="clip" id="clip">
 
         <button type="submit">Post</button>
     </form>
