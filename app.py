@@ -56,113 +56,13 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 # Optional Postgres support
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            email TEXT,
-            password TEXT NOT NULL,
-            bio TEXT DEFAULT '',
-            instrument TEXT DEFAULT '',
-            favorite_genre TEXT DEFAULT '',
-            profile_image TEXT DEFAULT ''
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            caption TEXT,
-            clip_filename TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS comments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            post_id INTEGER NOT NULL,
-            username TEXT NOT NULL,
-            body TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS likes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            post_id INTEGER NOT NULL,
-            username TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(post_id, username)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS groups (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            creator_username TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS group_members (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id INTEGER NOT NULL,
-            username TEXT NOT NULL,
-            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(group_id, username)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS group_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id INTEGER NOT NULL,
-            username TEXT NOT NULL,
-            message TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sender TEXT NOT NULL,
-            receiver TEXT NOT NULL,
-            body TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS follows (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            follower_username TEXT NOT NULL,
-            followed_username TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(follower_username, followed_username)
-        )
-    """)
-
-    conn.commit()
-    conn.close()
-
-init_db()
 
 def allowed_file(filename):
     return (
@@ -222,7 +122,8 @@ def init_db():
             profile_image TEXT DEFAULT ''
         )
     """)
-
+    cursor.execute("DROP TABLE IF EXISTS posts")
+    
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -331,6 +232,9 @@ def init_db():
     conn.close()
 
 
+init_db()
+
+
 def fetch_posts_with_counts(conn, user_id=None, only_username=None):
     params = []
     where_clause = ""
@@ -399,25 +303,32 @@ def fetch_posts_with_counts(conn, user_id=None, only_username=None):
 
     return posts, comments_by_post, liked_post_ids
 
+
 @app.route("/post", methods=["GET", "POST"])
+@login_required
 def post():
-    if "username" not in session:
-        return redirect(url_for("login"))
-
     if request.method == "POST":
-        caption = request.form.get("caption")
-        file = request.files.get("clip")
+        caption = request.form.get("caption", "").strip()
+        clip = request.files.get("clip")
 
-        filename = None
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(UPLOAD_FOLDER, filename))
+        clip_filename = ""
 
-        conn = sqlite3.connect(DATABASE)
-        conn.execute(
-            "INSERT INTO posts (username, caption, clip_filename) VALUES (?, ?, ?)",
-            (session["username"], caption, filename)
-        )
+        if clip and clip.filename:
+            saved_name = save_uploaded_file(clip)
+            if saved_name is None:
+                flash("That file type is not allowed.")
+                return redirect(url_for("post"))
+            clip_filename = saved_name
+
+        if not caption and not clip_filename:
+            flash("Add a caption or upload a file.")
+            return redirect(url_for("post"))
+
+        conn = get_db_connection()
+        conn.execute("""
+            INSERT INTO posts (user_id, caption, clip_filename)
+            VALUES (?, ?, ?)
+        """, (session["user_id"], caption, clip_filename))
         conn.commit()
         conn.close()
 
@@ -425,6 +336,7 @@ def post():
         return redirect(url_for("home"))
 
     return render_template("post.html")
+
 
 @app.route("/uploads/<filename>")
 def uploaded_file(filename):
