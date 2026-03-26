@@ -31,19 +31,16 @@ socketio = SocketIO(app)
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# Detect if running on Render
+# Use Render disk if available
 if os.environ.get("RENDER"):
     DATA_DIR = "/data"
 else:
     DATA_DIR = os.path.join(BASE_DIR, "local_data")
 
-# Create main data folder
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# Database path (persistent)
 DATABASE = os.path.join(DATA_DIR, "campus_jam.db")
 
-# Uploads folder (persistent)
 UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
