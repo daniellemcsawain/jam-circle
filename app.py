@@ -25,13 +25,11 @@ socketio = SocketIO(app, async_mode="threading")
 
 
 # -------------------------
-# PERMANENT STORAGE SETUP
+# STORAGE SETUP
 # -------------------------
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# On Render, use the mounted disk at /data
-# Locally, use a folder inside your project
 if os.environ.get("RENDER"):
     DATA_DIR = "/data"
 else:
@@ -53,47 +51,16 @@ ALLOWED_EXTENSIONS = {
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
-# Optional Postgres support
-DATABASE_URL = os.environ.get("DATABASE_URL")
 
+# -------------------------
+# DATABASE HELPERS
+# -------------------------
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
-
-
-def allowed_file(filename):
-    return (
-        "." in filename
-        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-    )
-
-
-def save_uploaded_file(file_storage):
-    if not file_storage or not file_storage.filename:
-        return ""
-
-    if not allowed_file(file_storage.filename):
-        return None
-
-    original_name = secure_filename(file_storage.filename)
-    ext = original_name.rsplit(".", 1)[1].lower()
-    unique_name = f"{uuid.uuid4().hex}.{ext}"
-    full_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
-    file_storage.save(full_path)
-    return unique_name
-
-
-def login_required(view_func):
-    @wraps(view_func)
-    def wrapped_view(*args, **kwargs):
-        if "user_id" not in session:
-            flash("Please log in first.")
-            return redirect(url_for("login"))
-        return view_func(*args, **kwargs)
-    return wrapped_view
 
 
 def add_column_if_missing(conn, table_name, column_name, column_definition):
@@ -110,23 +77,18 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("DROP TABLE IF EXISTS group_members")
-    cursor.execute("DROP TABLE IF EXISTS messages")
-    cursor.execute("DROP TABLE IF EXISTS groups")
-
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL,
-            major TEXT NOT NULL,
+            major TEXT DEFAULT '',
             instrument TEXT DEFAULT '',
             favorite_genre TEXT DEFAULT '',
             bio TEXT DEFAULT '',
             profile_image TEXT DEFAULT ''
         )
     """)
-    add_column_if_missing(conn, "users", "major", "TEXT DEFAULT ''")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS posts (
@@ -212,17 +174,15 @@ def init_db():
 
     conn.commit()
 
-    add_column_if_missing(conn, "users", "profile_image", "TEXT DEFAULT ''")
-    add_column_if_missing(conn, "users", "bio", "TEXT DEFAULT ''")
-    add_column_if_missing(conn, "posts", "caption", "TEXT DEFAULT ''")
-    add_column_if_missing(conn, "posts", "clip_filename", "TEXT DEFAULT ''")
     add_column_if_missing(conn, "users", "major", "TEXT DEFAULT ''")
     add_column_if_missing(conn, "users", "instrument", "TEXT DEFAULT ''")
     add_column_if_missing(conn, "users", "favorite_genre", "TEXT DEFAULT ''")
+    add_column_if_missing(conn, "users", "bio", "TEXT DEFAULT ''")
+    add_column_if_missing(conn, "users", "profile_image", "TEXT DEFAULT ''")
+    add_column_if_missing(conn, "posts", "caption", "TEXT DEFAULT ''")
+    add_column_if_missing(conn, "posts", "clip_filename", "TEXT DEFAULT ''")
 
-    existing_groups = conn.execute(
-        "SELECT COUNT(*) FROM groups"
-    ).fetchone()[0]
+    existing_groups = conn.execute("SELECT COUNT(*) FROM groups").fetchone()[0]
 
     if existing_groups == 0:
         conn.executemany("""
@@ -232,24 +192,57 @@ def init_db():
             ("Acoustic Sunset Circle", "Chill acoustic jams around campus.", None),
             ("Jazz & Improv Collective", "For students into jazz and improvisation.", None),
             ("Band Finder", "Find singers, drummers, guitarists, and bass players.", None),
-            ("Dorm Jam Sessions", "Meet other students in the dorms who want to jam.", None)
+            ("Dorm Jam Sessions", "Meet other students in the dorms who want to jam.", None),
         ])
         conn.commit()
 
     conn.close()
 
 
-init_db()
+# -------------------------
+# FILE HELPERS
+# -------------------------
 
-def add_column_if_missing(conn, table_name, column_name, column_definition):
-    cursor = conn.execute(f"PRAGMA table_info({table_name})")
-    columns = [row["name"] for row in cursor.fetchall()]
-    if column_name not in columns:
-        conn.execute(
-            f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}"
-        )
-        conn.commit()
-        
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
+
+
+def save_uploaded_file(file_storage):
+    if not file_storage or not file_storage.filename:
+        return ""
+
+    if not allowed_file(file_storage.filename):
+        return None
+
+    original_name = secure_filename(file_storage.filename)
+    ext = original_name.rsplit(".", 1)[1].lower()
+    unique_name = f"{uuid.uuid4().hex}.{ext}"
+    full_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
+    file_storage.save(full_path)
+    return unique_name
+
+
+# -------------------------
+# AUTH HELPERS
+# -------------------------
+
+def login_required(view_func):
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if "user_id" not in session:
+            flash("Please log in first.")
+            return redirect(url_for("login"))
+        return view_func(*args, **kwargs)
+    return wrapped_view
+
+
+# -------------------------
+# POST HELPERS
+# -------------------------
+
 def fetch_posts_with_counts(conn, user_id=None, only_username=None):
     params = []
     where_clause = ""
@@ -313,49 +306,19 @@ def fetch_posts_with_counts(conn, user_id=None, only_username=None):
             FROM likes
             WHERE user_id = ? AND post_id IN ({placeholders})
         """, [user_id, *post_ids]).fetchall()
-
         liked_post_ids = {row["post_id"] for row in liked_rows}
 
     return posts, comments_by_post, liked_post_ids
 
 
-@app.route("/post", methods=["GET", "POST"])
-@login_required
-def post():
-    if request.method == "POST":
-        caption = request.form.get("caption", "").strip()
-        clip = request.files.get("clip")
-
-        clip_filename = ""
-
-        if clip and clip.filename:
-            saved_name = save_uploaded_file(clip)
-            if saved_name is None:
-                flash("That file type is not allowed.")
-                return redirect(url_for("post"))
-            clip_filename = saved_name
-
-        if not caption and not clip_filename:
-            flash("Add a caption or upload a file.")
-            return redirect(url_for("post"))
-
-        conn = get_db_connection()
-        conn.execute("""
-            INSERT INTO posts (user_id, caption, clip_filename)
-            VALUES (?, ?, ?)
-        """, (session["user_id"], caption, clip_filename))
-        conn.commit()
-        conn.close()
-
-        flash("Post uploaded successfully!")
-        return redirect(url_for("home"))
-
-    return render_template("post.html")
-
+# -------------------------
+# BASIC ROUTES
+# -------------------------
 
 @app.route("/uploads/<filename>")
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
 
 @app.route("/")
 def home():
@@ -377,6 +340,10 @@ def home():
     )
 
 
+# -------------------------
+# AUTH ROUTES
+# -------------------------
+
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
@@ -394,10 +361,6 @@ def signup():
             flash("Password is required.")
             return redirect(url_for("signup"))
 
-        if not major:
-            flash("Major is required.")
-            return redirect(url_for("signup"))
-
         hashed_password = generate_password_hash(password)
 
         conn = get_db_connection()
@@ -407,14 +370,11 @@ def signup():
                 VALUES (?, ?, ?, ?, ?)
             """, (username, hashed_password, major, instrument, favorite_genre))
             conn.commit()
-
             flash("Account created successfully. Please log in.")
             return redirect(url_for("login"))
-
         except sqlite3.IntegrityError:
             flash("That username is already taken.")
             return redirect(url_for("signup"))
-
         finally:
             conn.close()
 
@@ -452,6 +412,44 @@ def logout():
     session.clear()
     flash("Logged out.")
     return redirect(url_for("login"))
+
+
+# -------------------------
+# POST ROUTES
+# -------------------------
+
+@app.route("/post", methods=["GET", "POST"])
+@login_required
+def post():
+    if request.method == "POST":
+        caption = request.form.get("caption", "").strip()
+        clip = request.files.get("clip")
+
+        clip_filename = ""
+
+        if clip and clip.filename:
+            saved_name = save_uploaded_file(clip)
+            if saved_name is None:
+                flash("That file type is not allowed.")
+                return redirect(url_for("post"))
+            clip_filename = saved_name
+
+        if not caption and not clip_filename:
+            flash("Add a caption or upload a file.")
+            return redirect(url_for("post"))
+
+        conn = get_db_connection()
+        conn.execute("""
+            INSERT INTO posts (user_id, caption, clip_filename)
+            VALUES (?, ?, ?)
+        """, (session["user_id"], caption, clip_filename))
+        conn.commit()
+        conn.close()
+
+        flash("Post uploaded successfully!")
+        return redirect(url_for("home"))
+
+    return render_template("post.html")
 
 
 @app.route("/create_post", methods=["POST"])
@@ -519,6 +517,10 @@ def delete_post(post_id):
     return redirect(url_for("home"))
 
 
+# -------------------------
+# COMMENT + LIKE ROUTES
+# -------------------------
+
 @app.route("/comment/<int:post_id>", methods=["POST"])
 @login_required
 def add_comment(post_id):
@@ -529,6 +531,18 @@ def add_comment(post_id):
         return redirect(request.referrer or url_for("home"))
 
     conn = get_db_connection()
+
+    post = conn.execute("""
+        SELECT id
+        FROM posts
+        WHERE id = ?
+    """, (post_id,)).fetchone()
+
+    if not post:
+        conn.close()
+        flash("Post not found.")
+        return redirect(request.referrer or url_for("home"))
+
     conn.execute("""
         INSERT INTO comments (post_id, user_id, content)
         VALUES (?, ?, ?)
@@ -536,6 +550,39 @@ def add_comment(post_id):
     conn.commit()
     conn.close()
 
+    flash("Comment added.")
+    return redirect(request.referrer or url_for("home"))
+
+
+@app.route("/delete_comment/<int:comment_id>", methods=["POST"])
+@login_required
+def delete_comment(comment_id):
+    conn = get_db_connection()
+
+    comment = conn.execute("""
+        SELECT *
+        FROM comments
+        WHERE id = ?
+    """, (comment_id,)).fetchone()
+
+    if not comment:
+        conn.close()
+        flash("Comment not found.")
+        return redirect(request.referrer or url_for("home"))
+
+    if comment["user_id"] != session["user_id"]:
+        conn.close()
+        flash("You can only delete your own comments.")
+        return redirect(request.referrer or url_for("home"))
+
+    conn.execute("""
+        DELETE FROM comments
+        WHERE id = ?
+    """, (comment_id,))
+    conn.commit()
+    conn.close()
+
+    flash("Comment deleted.")
     return redirect(request.referrer or url_for("home"))
 
 
@@ -570,6 +617,10 @@ def unlike_post(post_id):
 
     return redirect(request.referrer or url_for("home"))
 
+
+# -------------------------
+# PROFILE ROUTES
+# -------------------------
 
 @app.route("/profile/<username>")
 def profile(username):
@@ -625,68 +676,7 @@ def profile(username):
         following_count=following_count,
         is_following=is_following,
     )
-@app.route("/followers/<username>")
-@login_required
-def followers_list(username):
-    conn = get_db_connection()
 
-    profile_user = conn.execute("""
-        SELECT *
-        FROM users
-        WHERE username = ?
-    """, (username,)).fetchone()
-
-    if not profile_user:
-        conn.close()
-        flash("User not found.")
-        return redirect(url_for("home"))
-
-    followers = conn.execute("""
-        SELECT users.*
-        FROM follows
-        JOIN users ON follows.follower_id = users.id
-        WHERE follows.following_id = ?
-        ORDER BY users.username ASC
-    """, (profile_user["id"],)).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "followers_list.html",
-        profile_user=profile_user,
-        users=followers
-    )
-@app.route("/following/<username>")
-@login_required
-def following_list(username):
-    conn = get_db_connection()
-
-    profile_user = conn.execute("""
-        SELECT *
-        FROM users
-        WHERE username = ?
-    """, (username,)).fetchone()
-
-    if not profile_user:
-        conn.close()
-        flash("User not found.")
-        return redirect(url_for("home"))
-
-    following = conn.execute("""
-        SELECT users.*
-        FROM follows
-        JOIN users ON follows.following_id = users.id
-        WHERE follows.follower_id = ?
-        ORDER BY users.username ASC
-    """, (profile_user["id"],)).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "following_list.html",
-        profile_user=profile_user,
-        users=following
-    )
 
 @app.route("/edit_profile", methods=["GET", "POST"])
 @login_required
@@ -699,7 +689,6 @@ def edit_profile():
         favorite_genre = request.form.get("favorite_genre", "").strip()
         bio = request.form.get("bio", "").strip()
 
-        profile_image_file = request.files.get("profile_image")
         current_user = conn.execute("""
             SELECT *
             FROM users
@@ -707,6 +696,7 @@ def edit_profile():
         """, (session["user_id"],)).fetchone()
 
         profile_image_name = current_user["profile_image"]
+        profile_image_file = request.files.get("profile_image")
 
         if profile_image_file and profile_image_file.filename:
             saved_name = save_uploaded_file(profile_image_file)
@@ -744,34 +734,70 @@ def edit_profile():
     return render_template("edit_profile.html", user=user)
 
 
-@app.route("/search")
+@app.route("/followers/<username>")
 @login_required
-def search():
-    query = request.args.get("q", "").strip()
-
+def followers_list(username):
     conn = get_db_connection()
 
-    if query:
-        users = conn.execute("""
-            SELECT *
-            FROM users
-            WHERE username LIKE ?
-               OR instrument LIKE ?
-               OR major LIKE ?
-               OR favorite_genre LIKE ?
-            ORDER BY username ASC
-        """, (
-            f"%{query}%",
-            f"%{query}%",
-            f"%{query}%",
-            f"%{query}%"
-        )).fetchall()
-    else:
-        users = []
+    profile_user = conn.execute("""
+        SELECT *
+        FROM users
+        WHERE username = ?
+    """, (username,)).fetchone()
+
+    if not profile_user:
+        conn.close()
+        flash("User not found.")
+        return redirect(url_for("home"))
+
+    followers = conn.execute("""
+        SELECT users.*
+        FROM follows
+        JOIN users ON follows.follower_id = users.id
+        WHERE follows.following_id = ?
+        ORDER BY users.username ASC
+    """, (profile_user["id"],)).fetchall()
 
     conn.close()
 
-    return render_template("search.html", users=users, query=query)
+    return render_template(
+        "followers_list.html",
+        profile_user=profile_user,
+        users=followers
+    )
+
+
+@app.route("/following/<username>")
+@login_required
+def following_list(username):
+    conn = get_db_connection()
+
+    profile_user = conn.execute("""
+        SELECT *
+        FROM users
+        WHERE username = ?
+    """, (username,)).fetchone()
+
+    if not profile_user:
+        conn.close()
+        flash("User not found.")
+        return redirect(url_for("home"))
+
+    following = conn.execute("""
+        SELECT users.*
+        FROM follows
+        JOIN users ON follows.following_id = users.id
+        WHERE follows.follower_id = ?
+        ORDER BY users.username ASC
+    """, (profile_user["id"],)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "following_list.html",
+        profile_user=profile_user,
+        users=following
+    )
 
 
 @app.route("/follow/<int:user_id>", methods=["POST"])
@@ -809,6 +835,44 @@ def unfollow_user(user_id):
 
     return redirect(request.referrer or url_for("home"))
 
+
+# -------------------------
+# SEARCH ROUTE
+# -------------------------
+
+@app.route("/search")
+@login_required
+def search():
+    query = request.args.get("q", "").strip()
+
+    conn = get_db_connection()
+
+    if query:
+        users = conn.execute("""
+            SELECT *
+            FROM users
+            WHERE username LIKE ?
+               OR instrument LIKE ?
+               OR major LIKE ?
+               OR favorite_genre LIKE ?
+            ORDER BY username ASC
+        """, (
+            f"%{query}%",
+            f"%{query}%",
+            f"%{query}%",
+            f"%{query}%"
+        )).fetchall()
+    else:
+        users = []
+
+    conn.close()
+
+    return render_template("search.html", users=users, query=query)
+
+
+# -------------------------
+# GROUP ROUTES
+# -------------------------
 
 @app.route("/groups")
 @login_required
@@ -920,24 +984,27 @@ def group_chat(group_id):
                 conn.close()
                 flash("That file type is not allowed.")
                 return redirect(url_for("group_chat", group_id=group_id))
-
             file_name = saved_name
             file_type = saved_name.rsplit(".", 1)[1].lower()
 
-        if message_text or file_name:
-            conn.execute("""
-                INSERT INTO messages (sender_id, group_id, message_text, file_name, file_type)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                session["user_id"],
-                group_id,
-                message_text,
-                file_name,
-                file_type
-            ))
-            conn.commit()
+        if not message_text and not file_name:
+            conn.close()
+            flash("Write a message or attach a file.")
+            return redirect(url_for("group_chat", group_id=group_id))
 
+        conn.execute("""
+            INSERT INTO messages (sender_id, group_id, message_text, file_name, file_type)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            session["user_id"],
+            group_id,
+            message_text,
+            file_name,
+            file_type
+        ))
+        conn.commit()
         conn.close()
+
         return redirect(url_for("group_chat", group_id=group_id))
 
     messages = conn.execute("""
@@ -958,6 +1025,10 @@ def group_chat(group_id):
         messages=messages
     )
 
+
+# -------------------------
+# PRIVATE MESSAGE ROUTES
+# -------------------------
 
 @app.route("/messages/<int:user_id>", methods=["GET", "POST"])
 @login_required
@@ -992,14 +1063,19 @@ def private_messages(user_id):
             file_name = saved_name
             file_type = saved_name.rsplit(".", 1)[1].lower()
 
-        if message_text or file_name:
-            conn.execute("""
-                INSERT INTO messages (sender_id, receiver_id, message_text, file_name, file_type)
-                VALUES (?, ?, ?, ?, ?)
-            """, (current_user_id, user_id, message_text, file_name, file_type))
-            conn.commit()
+        if not message_text and not file_name:
+            conn.close()
+            flash("Write a message or attach a file.")
+            return redirect(url_for("private_messages", user_id=user_id))
 
+        conn.execute("""
+            INSERT INTO messages (sender_id, receiver_id, message_text, file_name, file_type)
+            VALUES (?, ?, ?, ?, ?)
+        """, (current_user_id, user_id, message_text, file_name, file_type))
+        conn.commit()
         conn.close()
+
+        flash("Message sent.")
         return redirect(url_for("private_messages", user_id=user_id))
 
     messages = conn.execute("""
@@ -1022,6 +1098,28 @@ def private_messages(user_id):
         messages=messages,
         other_user=other_user
     )
+
+
+@app.route("/messages/username/<username>")
+@login_required
+def private_messages_by_username(username):
+    conn = get_db_connection()
+
+    other_user = conn.execute("""
+        SELECT *
+        FROM users
+        WHERE username = ?
+    """, (username,)).fetchone()
+
+    conn.close()
+
+    if not other_user:
+        flash("User not found.")
+        return redirect(url_for("home"))
+
+    return redirect(url_for("private_messages", user_id=other_user["id"]))
+
+
 @app.route("/inbox")
 @login_required
 def inbox():
@@ -1043,36 +1141,11 @@ def inbox():
 
     conn.close()
     return render_template("inbox.html", conversations=conversations)
-@app.route("/delete_comment/<int:comment_id>", methods=["POST"])
-@login_required
-def delete_comment(comment_id):
-    conn = get_db_connection()
 
-    comment = conn.execute("""
-        SELECT *
-        FROM comments
-        WHERE id = ?
-    """, (comment_id,)).fetchone()
 
-    if not comment:
-        conn.close()
-        flash("Comment not found.")
-        return redirect(request.referrer or url_for("home"))
-
-    if comment["user_id"] != session["user_id"]:
-        conn.close()
-        flash("You can only delete your own comments.")
-        return redirect(request.referrer or url_for("home"))
-
-    conn.execute("""
-        DELETE FROM comments
-        WHERE id = ?
-    """, (comment_id,))
-    conn.commit()
-    conn.close()
-
-    flash("Comment deleted.")
-    return redirect(request.referrer or url_for("home"))
+# -------------------------
+# SOCKETS
+# -------------------------
 
 @socketio.on("join_group_room")
 def handle_join_group_room(data):
@@ -1081,7 +1154,11 @@ def handle_join_group_room(data):
         join_room(f"group_{group_id}")
 
 
+# -------------------------
+# STARTUP
+# -------------------------
+
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     socketio.run(app, debug=True)
-    

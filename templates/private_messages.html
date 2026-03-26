@@ -4,7 +4,12 @@
 <section class="feed-section">
     <h2>Chat with @{{ other_user["username"] }}</h2>
 
-    <form method="POST" enctype="multipart/form-data" action="{{ url_for('private_messages', user_id=other_user['id']) }}">
+    <form
+        method="POST"
+        enctype="multipart/form-data"
+        action="{{ url_for('private_messages', user_id=other_user['id']) }}"
+        class="message-form"
+    >
         <input type="text" name="message_text" placeholder="Type a message">
         <input type="file" name="attachment">
         <button type="submit">Send</button>
@@ -24,28 +29,36 @@
                 {% if msg["file_name"] %}
                     {% if msg["file_type"] in ['jpg', 'jpeg', 'png', 'gif'] %}
                         <img
-                            src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}"
+                            src="{{ url_for('uploaded_file', filename=msg['file_name']) }}"
                             alt="attachment"
                             style="max-width: 300px; border-radius: 10px;"
                         >
 
                     {% elif msg["file_type"] in ['mp4', 'mov', 'webm'] %}
                         <video controls style="max-width: 320px;">
-                            <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
+                            <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
+                            Your browser does not support video.
                         </video>
 
                     {% elif msg["file_type"] in ['mp3', 'wav', 'm4a'] %}
                         <audio controls>
-                            <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
+                            <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
+                            Your browser does not support audio.
                         </audio>
 
                     {% else %}
                         <p>
-                            <a href="{{ url_for('uploaded_file', filename=post['clip_filename']) }}" target="_blank">
+                            <a href="{{ url_for('uploaded_file', filename=msg['file_name']) }}" target="_blank">
                                 Download {{ msg["file_name"] }}
                             </a>
                         </p>
                     {% endif %}
+                {% endif %}
+
+                {% if msg["created_at"] %}
+                    <p style="font-size: 12px; opacity: 0.7; margin-top: 8px;">
+                        {{ msg["created_at"] }}
+                    </p>
                 {% endif %}
             </div>
         {% endfor %}

@@ -9,12 +9,10 @@
 <body>
     <header class="navbar">
         <div class="logo">
-            <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">
-                Campus Jam
-            </a>
+            <a href="{{ url_for('home') }}" class="logo-link">Campus Jam</a>
         </div>
 
-        <nav>
+        <nav class="nav-links">
             <a href="{{ url_for('home') }}">Home</a>
 
             {% if session.get('user_id') %}
@@ -24,6 +22,7 @@
                 <a href="{{ url_for('create_group') }}">Create Group</a>
                 <a href="{{ url_for('inbox') }}">Messages</a>
                 <a href="{{ url_for('profile', username=session['username']) }}">Profile</a>
+                <a href="{{ url_for('edit_profile') }}">Edit Profile</a>
                 <a href="{{ url_for('logout') }}">Logout</a>
             {% else %}
                 <a href="{{ url_for('login') }}">Login</a>
@@ -33,11 +32,13 @@
     </header>
 
     <main class="page-content">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="flash-message">{{ message }}</div>
-                {% endfor %}
+        {% with flashed_messages = get_flashed_messages() %}
+            {% if flashed_messages %}
+                <div class="flash-wrapper">
+                    {% for message in flashed_messages %}
+                        <div class="flash-message">{{ message }}</div>
+                    {% endfor %}
+                </div>
             {% endif %}
         {% endwith %}
 
