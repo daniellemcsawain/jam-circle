@@ -7,7 +7,7 @@
 
         {% if profile_user["profile_image"] %}
             <img
-                src="{{ url_for('uploaded_file', filename=user['profile_image']) }}"
+                src="{{ url_for('uploaded_file', filename=profile_user['profile_image']) }}"
                 alt="Profile picture"
                 style="width:100px; height:100px; object-fit:cover; border-radius:50%; margin-bottom:15px;"
             >
@@ -19,16 +19,17 @@
         <p><strong>Bio:</strong> {{ profile_user["bio"] or "No bio yet." }}</p>
 
         <p>
-    <a href="{{ url_for('followers_list', username=profile_user['username']) }}">
-        Followers: {{ follower_count }}
-    </a>
-</p>
+            <a href="{{ url_for('followers_list', username=profile_user['username']) }}">
+                Followers: {{ follower_count }}
+            </a>
+        </p>
 
-<p>
-    <a href="{{ url_for('following_list', username=profile_user['username']) }}">
-        Following: {{ following_count }}
-    </a>
-</p>
+        <p>
+            <a href="{{ url_for('following_list', username=profile_user['username']) }}">
+                Following: {{ following_count }}
+            </a>
+        </p>
+
         {% if session.get("user_id") and session.get("user_id") != profile_user["id"] %}
             <div class="actions-row">
                 <a class="button-link" href="{{ url_for('private_messages', user_id=profile_user['id']) }}">
@@ -64,19 +65,19 @@
 
                     {% if ext in ["jpg", "jpeg", "png", "gif"] %}
                         <img
-                            src="{{ url_for('uploaded_file', filename=user['profile_image']) }}"
+                            src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}"
                             alt="Post image"
                             style="max-width:300px; border-radius:10px;"
                         >
 
                     {% elif ext in ["mp4", "mov", "webm"] %}
                         <video controls style="max-width:300px;">
-                            <source src="{{ url_for('uploaded_file', filename=user['profile_image']) }}">
+                            <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
                         </video>
 
                     {% elif ext in ["mp3", "wav", "m4a"] %}
                         <audio controls>
-                            <source src="{{ url_for('uploaded_file', filename=user['profile_image']) }}">
+                            <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
                         </audio>
                     {% endif %}
                 {% endif %}
@@ -107,7 +108,7 @@
                     </form>
 
                     {% if session.get("user_id") == post["user_id"] %}
-                        <form method="POST" action="{{ url_for('delete_post', post_id=post['id']) }}" style="margin-top:10px;">
+                        <form method="POST" action="{{ url_for('delete_post', post_id=post['id']) }}">
                             <button type="submit">Delete Post</button>
                         </form>
                     {% endif %}
