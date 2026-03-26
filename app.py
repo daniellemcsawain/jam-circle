@@ -110,6 +110,10 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    cursor.execute("DROP TABLE IF EXISTS group_members")
+    cursor.execute("DROP TABLE IF EXISTS messages")
+    cursor.execute("DROP TABLE IF EXISTS groups")
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,8 +126,8 @@ def init_db():
             profile_image TEXT DEFAULT ''
         )
     """)
-    cursor.execute("DROP TABLE IF EXISTS posts")
     
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
