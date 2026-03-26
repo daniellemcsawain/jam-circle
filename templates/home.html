@@ -80,52 +80,73 @@
 
                 <p class="time-text">{{ post["created_at"] }}</p>
 
-<div class="actions-row stats-row">
-    <span>Likes: {{ post["like_count"] }}</span>
-    <span>Comments: {{ post["comment_count"] }}</span>
-</div>
+                <div class="actions-row stats-row">
+                    <span>Likes: {{ post["like_count"] }}</span>
+                    <span>Comments: {{ post["comment_count"] }}</span>
+                </div>
 
-{% if session.get("user_id") %}
-    <div class="actions-row button-row">
+                {% if session.get("user_id") %}
+                    <div class="actions-row button-row">
+                        {% if post["id"] in liked_post_ids %}
+                            <form method="POST" action="{{ url_for('unlike_post', post_id=post['id']) }}">
+                                <button type="submit" class="button-link">Unlike</button>
+                            </form>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('like_post', post_id=post['id']) }}">
+                                <button type="submit" class="button-link">Like</button>
+                            </form>
+                        {% endif %}
 
-        {% if post["id"] in liked_post_ids %}
-            <form method="POST" action="{{ url_for('unlike_post', post_id=post['id']) }}">
-                <button type="submit" class="button-link">Unlike</button>
-            </form>
-        {% else %}
-            <form method="POST" action="{{ url_for('like_post', post_id=post['id']) }}">
-                <button type="submit" class="button-link">Like</button>
-            </form>
-        {% endif %}
+                        <a class="button-link" href="{{ url_for('profile', username=post['username']) }}">
+                            View Profile
+                        </a>
 
-        <a class="button-link" href="{{ url_for('profile', username=post['username']) }}">
-            View Profile
-        </a>
+                        {% if session.get("username") != post["username"] %}
+                            <a class="button-link" href="{{ url_for('private_messages_by_username', username=post['username']) }}">
+                                Message
+                            </a>
+                        {% endif %}
+                    </div>
 
-        {% if session.get("username") != post["username"] %}
-            <a class="button-link" href="{{ url_for('private_messages_by_username', username=post['username']) }}">
-                Message
-            </a>
-        {% endif %}
-    </div>
+                    <form method="POST" action="{{ url_for('add_comment', post_id=post['id']) }}" class="comment-form">
+                        <input
+                            type="text"
+                            name="content"
+                            placeholder="Write a comment..."
+                            required
+                        >
+                        <button type="submit">Comment</button>
+                    </form>
 
-    <form method="POST" action="{{ url_for('add_comment', post_id=post['id']) }}" class="comment-form">
-        <input
-            type="text"
-            name="content"
-            placeholder="Write a comment..."
-            required
-        >
-        <button type="submit">Comment</button>
-    </form>
+                    {% if session.get("user_id") == post["user_id"] %}
+                        <form method="POST" action="{{ url_for('delete_post', post_id=post['id']) }}">
+                            <button type="submit">Delete Post</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
 
-    {% if session.get("user_id") == post["user_id"] %}
-        <form method="POST" action="{{ url_for('delete_post', post_id=post['id']) }}">
-            <button type="submit">Delete Post</button>
-        </form>
+                {% if comments_by_post.get(post["id"]) %}
+                    <div class="comments-box">
+                        {% for comment in comments_by_post[post["id"]] %}
+                            <div class="comment-row">
+                                <p>
+                                    <strong>@{{ comment["username"] }}</strong>
+                                    {{ comment["content"] }}
+                                </p>
+
+                                {% if session.get("user_id") == comment["user_id"] %}
+                                    <form method="POST" action="{{ url_for('delete_comment', comment_id=comment['id']) }}">
+                                        <button type="submit">Delete</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No posts yet. Sign up and make the first one.</p>
     {% endif %}
-{% endif %}
-
-</div> <!-- CLOSE post-card -->
-
-{% endfor %}
+</section>
+{% endblock %}
