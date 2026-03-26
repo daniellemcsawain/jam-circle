@@ -325,18 +325,50 @@ def home():
     conn = get_db_connection()
     user_id = session.get("user_id")
 
-    posts, comments_by_post, liked_post_ids = fetch_posts_with_counts(
-        conn,
-        user_id=user_id
-    )
+    posts = conn.execute("""
+        SELECT
+            posts.*,
+            users.username,
+            users.profile_image,
+
+            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+            (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id) AS comment_count
+
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        ORDER BY posts.id DESC
+    """).fetchall()
+
+    # which posts YOU liked
+    liked_post_ids = set()
+
+    if user_id:
+        liked = conn.execute("""
+            SELECT post_id FROM likes WHERE user_id = ?
+        """, (user_id,)).fetchall()
+
+        liked_post_ids = {row["post_id"] for row in liked}
+
+    # comments per post
+    comments_by_post = {}
+
+    comments = conn.execute("""
+        SELECT comments.*, users.username
+        FROM comments
+        JOIN users ON comments.user_id = users.id
+        ORDER BY comments.id ASC
+    """).fetchall()
+
+    for c in comments:
+        comments_by_post.setdefault(c["post_id"], []).append(c)
 
     conn.close()
 
     return render_template(
         "home.html",
         posts=posts,
-        comments_by_post=comments_by_post,
-        liked_post_ids=liked_post_ids
+        liked_post_ids=liked_post_ids,
+        comments_by_post=comments_by_post
     )
 
 
@@ -1025,7 +1057,6 @@ def group_chat(group_id):
         messages=messages
     )
 
-
 # -------------------------
 # PRIVATE MESSAGE ROUTES
 # -------------------------
@@ -1036,58 +1067,43 @@ def private_messages(user_id):
     conn = get_db_connection()
     current_user_id = session["user_id"]
 
-    other_user = conn.execute("""
-        SELECT *
-        FROM users
-        WHERE id = ?
-    """, (user_id,)).fetchone()
+    # Get the user you're chatting with
+    other_user = conn.execute(
+        "SELECT * FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
 
     if not other_user:
         conn.close()
-        flash("User not found.")
+        flash("User not found")
         return redirect(url_for("home"))
 
+    # Handle sending message
     if request.method == "POST":
         message_text = request.form.get("message_text", "").strip()
-        file = request.files.get("attachment")
 
-        file_name = None
-        file_type = None
-
-        if file and file.filename:
-            saved_name = save_uploaded_file(file)
-            if saved_name is None:
-                conn.close()
-                flash("That file type is not allowed.")
-                return redirect(url_for("private_messages", user_id=user_id))
-            file_name = saved_name
-            file_type = saved_name.rsplit(".", 1)[1].lower()
-
-        if not message_text and not file_name:
+        if not message_text:
             conn.close()
-            flash("Write a message or attach a file.")
+            flash("Message cannot be empty")
             return redirect(url_for("private_messages", user_id=user_id))
 
-        conn.execute("""
-            INSERT INTO messages (sender_id, receiver_id, message_text, file_name, file_type)
-            VALUES (?, ?, ?, ?, ?)
-        """, (current_user_id, user_id, message_text, file_name, file_type))
+        conn.execute(
+            "INSERT INTO messages (sender_id, receiver_id, message_text) VALUES (?, ?, ?)",
+            (current_user_id, user_id, message_text)
+        )
         conn.commit()
-        conn.close()
 
-        flash("Message sent.")
+        conn.close()
+        flash("Message sent")
         return redirect(url_for("private_messages", user_id=user_id))
 
+    # Load conversation
     messages = conn.execute("""
-        SELECT
-            messages.*,
-            users.username
+        SELECT messages.*, users.username
         FROM messages
         JOIN users ON messages.sender_id = users.id
-        WHERE
-            (messages.sender_id = ? AND messages.receiver_id = ?)
-            OR
-            (messages.sender_id = ? AND messages.receiver_id = ?)
+        WHERE (messages.sender_id = ? AND messages.receiver_id = ?)
+           OR (messages.sender_id = ? AND messages.receiver_id = ?)
         ORDER BY messages.id ASC
     """, (current_user_id, user_id, user_id, current_user_id)).fetchall()
 
@@ -1105,20 +1121,23 @@ def private_messages(user_id):
 def private_messages_by_username(username):
     conn = get_db_connection()
 
-    other_user = conn.execute("""
-        SELECT *
-        FROM users
-        WHERE username = ?
-    """, (username,)).fetchone()
+    user = conn.execute(
+        "SELECT * FROM users WHERE username = ?",
+        (username,)
+    ).fetchone()
 
     conn.close()
 
-    if not other_user:
-        flash("User not found.")
+    if not user:
+        flash("User not found")
         return redirect(url_for("home"))
 
-    return redirect(url_for("private_messages", user_id=other_user["id"]))
+    return redirect(url_for("private_messages", user_id=user["id"]))
 
+
+# -------------------------
+# INBOX ROUTE
+# -------------------------
 
 @app.route("/inbox")
 @login_required
@@ -1140,6 +1159,7 @@ def inbox():
     """, (current_user_id, current_user_id, current_user_id)).fetchall()
 
     conn.close()
+
     return render_template("inbox.html", conversations=conversations)
 
 
@@ -1150,6 +1170,7 @@ def inbox():
 @socketio.on("join_group_room")
 def handle_join_group_room(data):
     group_id = data.get("group_id")
+
     if group_id:
         join_room(f"group_{group_id}")
 

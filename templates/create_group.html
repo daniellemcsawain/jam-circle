@@ -1,19 +1,25 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="form-section">
-<h1>Create Jam Circle</h1>
+<section class="feed-section">
+    <h2>Create a Jam Circle</h2>
 
-<form method="POST" class="post-form">
+    <form method="POST" action="{{ url_for('create_group') }}" style="display:grid; gap:12px; max-width:520px;">
+        <input
+            type="text"
+            name="name"
+            placeholder="Group name"
+            required
+        >
 
-<label>Group Name</label>
-<input name="name" required>
+        <textarea
+            name="description"
+            placeholder="Describe your group"
+            rows="5"
+            required
+        ></textarea>
 
-<label>Description</label>
-<textarea name="description"></textarea>
-
-<button type="submit">Create Group</button>
-
-</form>
+        <button type="submit">Create Group</button>
+    </form>
 </section>
 {% endblock %}

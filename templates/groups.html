@@ -2,20 +2,33 @@
 
 {% block content %}
 <section class="feed-section">
-    <h1>Jam Circles</h1>
+    <h2>Jam Circles</h2>
+    <p>Join a music group or start your own.</p>
+
+    <div style="margin-bottom: 18px;">
+        <a class="button-link" href="{{ url_for('create_group') }}">Create New Group</a>
+    </div>
 
     {% if groups %}
-        {% for group in groups %}
-            <div class="post">
-                <h2>{{ group["name"] }}</h2>
-                <p>{{ group["description"] }}</p>
-                <p>Members: {{ group["member_count"] }}</p>
+        <div style="display:grid; gap:16px;">
+            {% for group in groups %}
+                <div class="post-card">
+                    <h3 style="margin-top:0;">{{ group["name"] }}</h3>
+                    <p>{{ group["description"] }}</p>
+                    <p>Members: {{ group["member_count"] }}</p>
 
-                <form method="POST" action="{{ url_for('join_group', group_id=group['id']) }}">
-                    <button type="submit">Join Group</button>
-                </form>
-            </div>
-        {% endfor %}
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
+                        <form method="POST" action="{{ url_for('join_group', group_id=group['id']) }}">
+                            <button type="submit">Join Group</button>
+                        </form>
+
+                        <a class="button-link" href="{{ url_for('group_chat', group_id=group['id']) }}">
+                            Open Group Chat
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     {% else %}
         <p>No groups yet.</p>
     {% endif %}

@@ -9,9 +9,13 @@
         method="POST"
         enctype="multipart/form-data"
         action="{{ url_for('group_chat', group_id=group['id']) }}"
-        class="message-form"
+        style="display:grid; gap:10px; margin-bottom:20px;"
     >
-        <input type="text" name="message_text" placeholder="Send a message to the group">
+        <input
+            type="text"
+            name="message_text"
+            placeholder="Send a message to the group"
+        >
         <input type="file" name="attachment">
         <button type="submit">Send</button>
     </form>
@@ -28,17 +32,17 @@
                 {% endif %}
 
                 {% if msg["file_name"] %}
-                    {% if msg["file_type"] in ['jpg', 'jpeg', 'png', 'gif'] %}
+                    {% if msg["file_type"] in ["jpg", "jpeg", "png", "gif"] %}
                         <img
                             src="{{ url_for('uploaded_file', filename=msg['file_name']) }}"
                             alt="attachment"
                             style="max-width:300px; border-radius:10px;"
                         >
-                    {% elif msg["file_type"] in ['mp4', 'mov', 'webm'] %}
+                    {% elif msg["file_type"] in ["mp4", "mov", "webm"] %}
                         <video controls style="max-width:320px;">
                             <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
                         </video>
-                    {% elif msg["file_type"] in ['mp3', 'wav', 'm4a'] %}
+                    {% elif msg["file_type"] in ["mp3", "wav", "m4a"] %}
                         <audio controls>
                             <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
                         </audio>
@@ -49,6 +53,12 @@
                             </a>
                         </p>
                     {% endif %}
+                {% endif %}
+
+                {% if msg["created_at"] %}
+                    <p style="font-size:12px; opacity:0.7; margin-top:8px;">
+                        {{ msg["created_at"] }}
+                    </p>
                 {% endif %}
             </div>
         {% endfor %}

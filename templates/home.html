@@ -29,14 +29,14 @@
                     {% endif %}
 
                     <div class="post-user-meta">
-                        <p class="username-wrap">
+                        <p style="margin:0;">
                             <strong>
                                 <a class="username-link" href="{{ url_for('profile', username=post['username']) }}">
                                     @{{ post["username"] }}
                                 </a>
                             </strong>
                         </p>
-                        <p class="major-text">
+                        <p style="margin:0;">
                             {{ post["instrument"] or "No instrument" }} •
                             {{ post["major"] or "No major" }}
                         </p>
@@ -56,19 +56,14 @@
                             alt="Post image"
                             class="media-preview"
                         >
-
                     {% elif ext in ["mp4", "mov", "webm"] %}
                         <video controls class="media-preview">
                             <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
-                            Your browser does not support video.
                         </video>
-
                     {% elif ext in ["mp3", "wav", "m4a"] %}
                         <audio controls class="audio-preview">
                             <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
-                            Your browser does not support audio.
                         </audio>
-
                     {% else %}
                         <p>
                             <a href="{{ url_for('uploaded_file', filename=post['clip_filename']) }}" target="_blank">
@@ -117,28 +112,13 @@
                         >
                         <button type="submit">Comment</button>
                     </form>
-
-                    {% if session.get("user_id") == post["user_id"] %}
-                        <form method="POST" action="{{ url_for('delete_post', post_id=post['id']) }}">
-                            <button type="submit">Delete Post</button>
-                        </form>
-                    {% endif %}
                 {% endif %}
 
                 {% if comments_by_post.get(post["id"]) %}
                     <div class="comments-box">
                         {% for comment in comments_by_post[post["id"]] %}
                             <div class="comment-row">
-                                <p>
-                                    <strong>@{{ comment["username"] }}</strong>
-                                    {{ comment["content"] }}
-                                </p>
-
-                                {% if session.get("user_id") == comment["user_id"] %}
-                                    <form method="POST" action="{{ url_for('delete_comment', comment_id=comment['id']) }}">
-                                        <button type="submit">Delete</button>
-                                    </form>
-                                {% endif %}
+                                <p><strong>@{{ comment["username"] }}</strong> {{ comment["content"] }}</p>
                             </div>
                         {% endfor %}
                     </div>
