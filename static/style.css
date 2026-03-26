@@ -26,6 +26,22 @@
     --paper-shadow: rgba(0, 0, 0, 0.10);
 }
 
+.post-avatar-image {
+    width: 42px;
+    height: 42px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.profile-avatar,
+.profile-page img,
+.profile-header img {
+    width: 70;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
 html {
     scroll-behavior: smooth;
 }
@@ -50,6 +66,27 @@ body {
     max-width: 1050px;
     margin: 0 auto;
     padding: 28px 18px 70px;
+}
+.button-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.button-row form {
+    margin: 0;
+}
+
+.button-link {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    text-decoration: underline;
 }
 
 /* navbar */
