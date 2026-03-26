@@ -1,5 +1,3 @@
-import eventlet
-eventlet.monkey_patch()
 
 import os
 import sqlite3
@@ -23,7 +21,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode="threading")
 
 # -------------------------
 # PERMANENT STORAGE SETUP
