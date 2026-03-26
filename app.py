@@ -31,7 +31,6 @@ socketio = SocketIO(app)
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# Use Render disk if available
 if os.environ.get("RENDER"):
     DATA_DIR = "/data"
 else:
@@ -40,7 +39,6 @@ else:
 os.makedirs(DATA_DIR, exist_ok=True)
 
 DATABASE = os.path.join(DATA_DIR, "campus_jam.db")
-
 UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -54,25 +52,24 @@ ALLOWED_EXTENSIONS = {
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Optional Postgres support
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
 def get_db_connection():
     """
-    Uses Postgres in production if DATABASE_URL exists.
-    Falls back to SQLite locally if DATABASE_URL is missing.
+    Use Postgres if DATABASE_URL exists.
+    Otherwise use SQLite.
     """
     if DATABASE_URL:
         import psycopg2
         conn = psycopg2.connect(DATABASE_URL)
         return conn
     else:
-        conn = sqlite3.connect(SQLITE_FALLBACK)
+        conn = sqlite3.connect(DATABASE)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
-
-
 def allowed_file(filename):
     return (
         "." in filename
