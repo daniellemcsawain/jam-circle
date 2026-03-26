@@ -339,19 +339,17 @@ def home():
         ORDER BY posts.id DESC
     """).fetchall()
 
-    # which posts YOU liked
     liked_post_ids = set()
 
     if user_id:
-        liked = conn.execute("""
-            SELECT post_id FROM likes WHERE user_id = ?
-        """, (user_id,)).fetchall()
+        liked = conn.execute(
+            "SELECT post_id FROM likes WHERE user_id = ?",
+            (user_id,)
+        ).fetchall()
 
         liked_post_ids = {row["post_id"] for row in liked}
 
-    # comments per post
     comments_by_post = {}
-
     comments = conn.execute("""
         SELECT comments.*, users.username
         FROM comments
@@ -559,30 +557,19 @@ def add_comment(post_id):
     content = request.form.get("content", "").strip()
 
     if not content:
-        flash("Comment cannot be empty.")
+        flash("Comment cannot be empty")
         return redirect(request.referrer or url_for("home"))
 
     conn = get_db_connection()
 
-    post = conn.execute("""
-        SELECT id
-        FROM posts
-        WHERE id = ?
-    """, (post_id,)).fetchone()
+    conn.execute(
+        "INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)",
+        (post_id, session["user_id"], content)
+    )
 
-    if not post:
-        conn.close()
-        flash("Post not found.")
-        return redirect(request.referrer or url_for("home"))
-
-    conn.execute("""
-        INSERT INTO comments (post_id, user_id, content)
-        VALUES (?, ?, ?)
-    """, (post_id, session["user_id"], content))
     conn.commit()
     conn.close()
 
-    flash("Comment added.")
     return redirect(request.referrer or url_for("home"))
 
 
@@ -622,17 +609,17 @@ def delete_comment(comment_id):
 @login_required
 def like_post(post_id):
     conn = get_db_connection()
-    try:
-        conn.execute("""
-            INSERT INTO likes (post_id, user_id)
-            VALUES (?, ?)
-        """, (post_id, session["user_id"]))
-        conn.commit()
-    except sqlite3.IntegrityError:
-        pass
-    finally:
-        conn.close()
 
+    try:
+        conn.execute(
+            "INSERT INTO likes (post_id, user_id) VALUES (?, ?)",
+            (post_id, session["user_id"])
+        )
+        conn.commit()
+    except:
+        pass
+
+    conn.close()
     return redirect(request.referrer or url_for("home"))
 
 
@@ -640,10 +627,12 @@ def like_post(post_id):
 @login_required
 def unlike_post(post_id):
     conn = get_db_connection()
-    conn.execute("""
-        DELETE FROM likes
-        WHERE post_id = ? AND user_id = ?
-    """, (post_id, session["user_id"]))
+
+    conn.execute(
+        "DELETE FROM likes WHERE post_id = ? AND user_id = ?",
+        (post_id, session["user_id"])
+    )
+
     conn.commit()
     conn.close()
 
@@ -911,47 +900,45 @@ def search():
 def groups():
     conn = get_db_connection()
 
-    groups_list = conn.execute("""
-        SELECT
-            groups.*,
-            COUNT(group_members.id) AS member_count
+    groups = conn.execute("""
+        SELECT groups.*, COUNT(group_members.id) AS member_count
         FROM groups
         LEFT JOIN group_members ON groups.id = group_members.group_id
         GROUP BY groups.id
-        ORDER BY groups.id DESC
     """).fetchall()
 
     conn.close()
-    return render_template("groups.html", groups=groups_list)
+    return render_template("groups.html", groups=groups)
 
 
 @app.route("/groups/create", methods=["GET", "POST"])
 @login_required
 def create_group():
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        description = request.form.get("description", "").strip()
+        name = request.form.get("name")
+        description = request.form.get("description")
 
         if not name or not description:
-            flash("Group name and description are required.")
+            flash("Fill everything out")
             return redirect(url_for("create_group"))
 
         conn = get_db_connection()
-        cursor = conn.execute("""
-            INSERT INTO groups (name, description, creator_id)
-            VALUES (?, ?, ?)
-        """, (name, description, session["user_id"]))
+
+        cursor = conn.execute(
+            "INSERT INTO groups (name, description, creator_id) VALUES (?, ?, ?)",
+            (name, description, session["user_id"])
+        )
+
         group_id = cursor.lastrowid
 
-        conn.execute("""
-            INSERT INTO group_members (group_id, user_id)
-            VALUES (?, ?)
-        """, (group_id, session["user_id"]))
+        conn.execute(
+            "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)",
+            (group_id, session["user_id"])
+        )
 
         conn.commit()
         conn.close()
 
-        flash("Group created.")
         return redirect(url_for("group_chat", group_id=group_id))
 
     return render_template("create_group.html")
@@ -961,18 +948,17 @@ def create_group():
 @login_required
 def join_group(group_id):
     conn = get_db_connection()
-    try:
-        conn.execute("""
-            INSERT INTO group_members (group_id, user_id)
-            VALUES (?, ?)
-        """, (group_id, session["user_id"]))
-        conn.commit()
-        flash("Joined group.")
-    except sqlite3.IntegrityError:
-        flash("You are already in this group.")
-    finally:
-        conn.close()
 
+    try:
+        conn.execute(
+            "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)",
+            (group_id, session["user_id"])
+        )
+        conn.commit()
+    except:
+        pass
+
+    conn.close()
     return redirect(url_for("group_chat", group_id=group_id))
 
 
@@ -981,63 +967,52 @@ def join_group(group_id):
 def group_chat(group_id):
     conn = get_db_connection()
 
-    group = conn.execute("""
-        SELECT *
-        FROM groups
-        WHERE id = ?
-    """, (group_id,)).fetchone()
+    group = conn.execute(
+        "SELECT * FROM groups WHERE id = ?",
+        (group_id,)
+    ).fetchone()
 
-    if not group:
-        conn.close()
-        flash("Group not found.")
-        return redirect(url_for("groups"))
-
-    membership = conn.execute("""
-        SELECT *
-        FROM group_members
-        WHERE group_id = ? AND user_id = ?
-    """, (group_id, session["user_id"])).fetchone()
+    membership = conn.execute(
+        "SELECT * FROM group_members WHERE group_id = ? AND user_id = ?",
+        (group_id, session["user_id"])
+    ).fetchone()
 
     if not membership:
         conn.close()
-        flash("Join the group first.")
+        flash("Join the group first")
         return redirect(url_for("groups"))
 
     if request.method == "POST":
         message_text = request.form.get("message_text", "").strip()
-        file = request.files.get("attachment")
 
-        file_name = None
-        file_type = None
-
-        if file and file.filename:
-            saved_name = save_uploaded_file(file)
-            if saved_name is None:
-                conn.close()
-                flash("That file type is not allowed.")
-                return redirect(url_for("group_chat", group_id=group_id))
-            file_name = saved_name
-            file_type = saved_name.rsplit(".", 1)[1].lower()
-
-        if not message_text and not file_name:
+        if not message_text:
             conn.close()
-            flash("Write a message or attach a file.")
             return redirect(url_for("group_chat", group_id=group_id))
 
-        conn.execute("""
-            INSERT INTO messages (sender_id, group_id, message_text, file_name, file_type)
-            VALUES (?, ?, ?, ?, ?)
-        """, (
-            session["user_id"],
-            group_id,
-            message_text,
-            file_name,
-            file_type
-        ))
+        conn.execute(
+            "INSERT INTO messages (sender_id, group_id, message_text) VALUES (?, ?, ?)",
+            (session["user_id"], group_id, message_text)
+        )
+
         conn.commit()
-        conn.close()
 
         return redirect(url_for("group_chat", group_id=group_id))
+
+    messages = conn.execute("""
+        SELECT messages.*, users.username
+        FROM messages
+        JOIN users ON messages.sender_id = users.id
+        WHERE group_id = ?
+        ORDER BY messages.id ASC
+    """, (group_id,)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "group_chat.html",
+        group=group,
+        messages=messages
+    )
 
     messages = conn.execute("""
         SELECT
@@ -1067,7 +1042,6 @@ def private_messages(user_id):
     conn = get_db_connection()
     current_user_id = session["user_id"]
 
-    # Get the user you're chatting with
     other_user = conn.execute(
         "SELECT * FROM users WHERE id = ?",
         (user_id,)
@@ -1078,7 +1052,6 @@ def private_messages(user_id):
         flash("User not found")
         return redirect(url_for("home"))
 
-    # Handle sending message
     if request.method == "POST":
         message_text = request.form.get("message_text", "").strip()
 
@@ -1094,8 +1067,24 @@ def private_messages(user_id):
         conn.commit()
 
         conn.close()
-        flash("Message sent")
         return redirect(url_for("private_messages", user_id=user_id))
+
+    messages = conn.execute("""
+        SELECT messages.*, users.username
+        FROM messages
+        JOIN users ON messages.sender_id = users.id
+        WHERE (messages.sender_id = ? AND messages.receiver_id = ?)
+           OR (messages.sender_id = ? AND messages.receiver_id = ?)
+        ORDER BY messages.id ASC
+    """, (current_user_id, user_id, user_id, current_user_id)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "private_messages.html",
+        messages=messages,
+        other_user=other_user
+    )
 
     # Load conversation
     messages = conn.execute("""
