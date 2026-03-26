@@ -4,18 +4,36 @@
 <section class="feed-section">
     <h2>Chat with @{{ other_user["username"] }}</h2>
 
-   <form method="POST" action="/messages/{{ other_user['id'] }}">
-    
-    <input
-        type="text"
-        name="message_text"
-        placeholder="Type a message"
-        required
-    >
+   {% extends "base.html" %}
 
-    <button type="submit">Send</button>
+{% block content %}
+<section class="feed-section">
+    <h1>Chat with @{{ other_user["username"] }}</h1>
 
-</form>
+    <div class="chat-box">
+        {% if messages %}
+            {% for message in messages %}
+                <p>
+                    <strong>@{{ message["username"] }}</strong>
+                    {{ message["message_text"] }}
+                </p>
+            {% endfor %}
+        {% else %}
+            <p>No messages yet.</p>
+        {% endif %}
+    </div>
+
+    <form method="POST" action="{{ url_for('private_messages', user_id=other_user['id']) }}">
+        <input
+            type="text"
+            name="message_text"
+            placeholder="Write a message..."
+            required
+        >
+        <button type="submit">Send</button>
+    </form>
+</section>
+{% endblock %}
 
     <hr>
 
