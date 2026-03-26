@@ -4,20 +4,18 @@
 <section class="feed-section">
     <h2>Chat with @{{ other_user["username"] }}</h2>
 
-    <form
-        method="POST"
-        enctype="multipart/form-data"
-        action="{{ url_for('private_messages', user_id=other_user['id']) }}"
-        style="display:grid; gap:10px; margin-bottom:20px;"
+   <form method="POST" action="/messages/{{ other_user['id'] }}">
+    
+    <input
+        type="text"
+        name="message_text"
+        placeholder="Type a message"
+        required
     >
-        <input
-            type="text"
-            name="message_text"
-            placeholder="Type a message"
-        >
-       
-        <button type="submit">Send</button>
-    </form>
+
+    <button type="submit">Send</button>
+
+</form>
 
     <hr>
 
