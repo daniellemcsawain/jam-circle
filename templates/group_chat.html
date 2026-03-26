@@ -1,37 +1,59 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>{{ group.name }}</h2>
+<section class="feed-section">
+    <h2>{{ group["name"] }}</h2>
+    <p>{{ group["description"] }}</p>
 
-<form method="POST" enctype="multipart/form-data">
-    <input type="text" name="message_text" placeholder="Send a message to the group">
-    <input type="file" name="attachment">
-    <button type="submit">Send</button>
-</form>
+    <form
+        method="POST"
+        enctype="multipart/form-data"
+        action="{{ url_for('group_chat', group_id=group['id']) }}"
+        class="message-form"
+    >
+        <input type="text" name="message_text" placeholder="Send a message to the group">
+        <input type="file" name="attachment">
+        <button type="submit">Send</button>
+    </form>
 
-<hr>
+    <hr>
 
-{% for msg in messages %}
-    <div style="margin-bottom: 20px; padding: 10px; background: #1f1f1f; border-radius: 12px;">
-        <strong>@{{ msg.username }}</strong>
+    {% if messages %}
+        {% for msg in messages %}
+            <div class="post-card" style="margin-bottom:16px;">
+                <p><strong>@{{ msg["username"] }}</strong></p>
 
-        {% if msg.message_text %}
-            <p>{{ msg.message_text }}</p>
-        {% endif %}
+                {% if msg["message_text"] %}
+                    <p>{{ msg["message_text"] }}</p>
+                {% endif %}
 
-        {% if msg.file_name %}
-            {% if msg.file_type in ['jpg', 'jpeg', 'png', 'gif'] %}
-                <img src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}" width="250">
-            {% elif msg.file_type in ['mp4', 'mov'] %}
-                <video width="300" controls>
-                    <source src="{{ url_for('uploaded_file', filename=post['clip_filename']) }}">
-                </video>
-            {% else %}
-                <a href="{{ url_for('uploaded_file', filename=post['clip_filename']) }}" target="_blank">
-                    Download {{ msg.file_name }}
-                </a>
-            {% endif %}
-        {% endif %}
-    </div>
-{% endfor %}
+                {% if msg["file_name"] %}
+                    {% if msg["file_type"] in ['jpg', 'jpeg', 'png', 'gif'] %}
+                        <img
+                            src="{{ url_for('uploaded_file', filename=msg['file_name']) }}"
+                            alt="attachment"
+                            style="max-width:300px; border-radius:10px;"
+                        >
+                    {% elif msg["file_type"] in ['mp4', 'mov', 'webm'] %}
+                        <video controls style="max-width:320px;">
+                            <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
+                        </video>
+                    {% elif msg["file_type"] in ['mp3', 'wav', 'm4a'] %}
+                        <audio controls>
+                            <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
+                        </audio>
+                    {% else %}
+                        <p>
+                            <a href="{{ url_for('uploaded_file', filename=msg['file_name']) }}" target="_blank">
+                                Download {{ msg["file_name"] }}
+                            </a>
+                        </p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No group messages yet.</p>
+    {% endif %}
+</section>
 {% endblock %}

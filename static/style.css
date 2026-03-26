@@ -89,6 +89,61 @@ body {
     text-decoration: underline;
 }
 
+.search-form {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    padding: 10px;
+    width: 280px;
+    max-width: 100%;
+}
+
+.search-results {
+    display: grid;
+    gap: 16px;
+}
+
+.search-user-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.search-avatar {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.search-avatar-fallback {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-user-info p {
+    margin: 0;
+}
+
+.search-username {
+    margin-bottom: 4px;
+}
+
+.search-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 /* navbar */
 .navbar {
     display: flex;
