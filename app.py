@@ -126,7 +126,7 @@ def init_db():
             profile_image TEXT DEFAULT ''
         )
     """)
-    
+    add_column_if_missing(conn, "users", "major", "TEXT DEFAULT ''")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS posts (
@@ -216,6 +216,9 @@ def init_db():
     add_column_if_missing(conn, "users", "bio", "TEXT DEFAULT ''")
     add_column_if_missing(conn, "posts", "caption", "TEXT DEFAULT ''")
     add_column_if_missing(conn, "posts", "clip_filename", "TEXT DEFAULT ''")
+    add_column_if_missing(conn, "users", "major", "TEXT DEFAULT ''")
+    add_column_if_missing(conn, "users", "instrument", "TEXT DEFAULT ''")
+    add_column_if_missing(conn, "users", "favorite_genre", "TEXT DEFAULT ''")
 
     existing_groups = conn.execute(
         "SELECT COUNT(*) FROM groups"
@@ -238,7 +241,15 @@ def init_db():
 
 init_db()
 
-
+def add_column_if_missing(conn, table_name, column_name, column_definition):
+    cursor = conn.execute(f"PRAGMA table_info({table_name})")
+    columns = [row["name"] for row in cursor.fetchall()]
+    if column_name not in columns:
+        conn.execute(
+            f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}"
+        )
+        conn.commit()
+        
 def fetch_posts_with_counts(conn, user_id=None, only_username=None):
     params = []
     where_clause = ""
