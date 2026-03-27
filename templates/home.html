@@ -125,6 +125,9 @@
                         {% for comment in comments_by_post[post["id"]] %}
                             <div class="comment-row">
                                 <p><strong>@{{ comment["username"] }}</strong> {{ comment["content"] }}</p>
+                                <form method="POST" action="{{ url_for('delete_comment', comment_id=comment['id']) }}">
+    <button type="submit">Delete</button>
+</form>
                             </div>
                         {% endfor %}
                     </div>

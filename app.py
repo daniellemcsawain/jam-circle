@@ -994,22 +994,55 @@ def create_group():
 
 
 @app.route("/join_group/<int:group_id>", methods=["POST"])
-@login_required
 def join_group(group_id):
-    conn = get_db_connection()
+    if "user_id" not in session:
+        return redirect(url_for("login"))
 
-    try:
-        conn.execute(
-            "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)",
-            (group_id, session["user_id"])
-        )
-        conn.commit()
-    except:
-        pass
+    user_id = session["user_id"]
 
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+
+    # make sure table exists
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS group_members (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        group_id INTEGER
+    )
+    """)
+
+    # prevent duplicate join
+    c.execute("""
+        SELECT * FROM group_members WHERE user_id=? AND group_id=?
+    """, (user_id, group_id))
+
+    if not c.fetchone():
+        c.execute("""
+            INSERT INTO group_members (user_id, group_id)
+            VALUES (?, ?)
+        """, (user_id, group_id))
+
+    conn.commit()
     conn.close()
+
+    # ✅ THIS IS THE IMPORTANT FIX
     return redirect(url_for("group_chat", group_id=group_id))
 
+@app.route("/group_chat/<int:group_id>")
+def group_chat(group_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+
+    c.execute("SELECT * FROM groups WHERE id=?", (group_id,))
+    group = c.fetchone()
+
+    conn.close()
+
+    return render_template("group_chat.html", group=group)
 
 @app.route("/groups/<int:group_id>", methods=["GET", "POST"])
 @login_required
@@ -1062,7 +1095,40 @@ def group_chat(group_id):
         group=group,
         messages=messages
     )
+@app.route("/delete_comment/<int:comment_id>", methods=["POST"])
+def delete_comment(comment_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
 
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+
+    c.execute("""
+        DELETE FROM comments
+        WHERE id=? AND user_id=?
+    """, (comment_id, session["user_id"]))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(request.referrer or url_for("home"))
+
+    @app.route("/search_groups")
+def search_groups():
+    query = request.args.get("q", "")
+
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT * FROM groups
+        WHERE name LIKE ?
+    """, ('%' + query + '%',))
+
+    groups = c.fetchall()
+    conn.close()
+
+    return render_template("groups.html", groups=groups)
 # -------------------------
 # PRIVATE MESSAGE ROUTES
 #------------------------
