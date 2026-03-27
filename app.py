@@ -1028,22 +1028,6 @@ def join_group(group_id):
 
     # ✅ THIS IS THE IMPORTANT FIX
     return redirect(url_for("group_chat", group_id=group_id))
-
-@app.route("/group_chat/<int:group_id>")
-def group_chat(group_id):
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    conn = sqlite3.connect(DATABASE)
-    c = conn.cursor()
-
-    c.execute("SELECT * FROM groups WHERE id=?", (group_id,))
-    group = c.fetchone()
-
-    conn.close()
-
-    return render_template("group_chat.html", group=group)
-
 @app.route("/groups/<int:group_id>", methods=["GET", "POST"])
 @login_required
 def group_chat(group_id):
