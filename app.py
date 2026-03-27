@@ -1113,7 +1113,7 @@ def delete_comment(comment_id):
 
     return redirect(request.referrer or url_for("home"))
 
-    @app.route("/search_groups")
+@app.route("/search_groups")
 def search_groups():
     query = request.args.get("q", "")
 
