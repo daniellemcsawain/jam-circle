@@ -10,7 +10,9 @@
                 <div style="margin-bottom: 12px;">
                     <strong>@{{ msg["username"] }}</strong>
 
-                    <p>{{ msg["content"] }}</p>
+                    {% if msg["content"] %}
+                        <p>{{ msg["content"] }}</p>
+                    {% endif %}
 
                     {% if msg["created_at"] %}
                         <p style="font-size:12px; opacity:0.6;">
