@@ -74,7 +74,7 @@ def add_column_if_missing(conn, table_name, column_name, column_definition):
 
 
 def init_db():
-    conn = get_db_connection()
+    conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1184,4 +1184,5 @@ def handle_join_group_room(data):
 init_db()
 
 if __name__ == "__main__":
+    init_db()
     socketio.run(app, debug=True)
