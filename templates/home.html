@@ -114,7 +114,7 @@
                     </form>
                 {% endif %}
                
-                {% if session["user_id"] == post["user_id"] %}
+                {% if session.get("user_id") == post["user_id"] %}
     <form action="{{ url_for('delete_post', post_id=post['id']) }}" method="POST">
         <button type="submit">Delete</button>
     </form>

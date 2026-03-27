@@ -90,6 +90,15 @@ def init_db():
         )
     """)
 
+    cursor.execute ("""
+    CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL,
+    receiver_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) """)
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1037,34 +1046,17 @@ def group_chat(group_id):
         messages=messages
     )
 
-    messages = conn.execute("""
-        SELECT
-            messages.*,
-            users.username
-        FROM messages
-        JOIN users ON messages.sender_id = users.id
-        WHERE messages.group_id = ?
-        ORDER BY messages.id ASC
-    """, (group_id,)).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "group_chat.html",
-        group=group,
-        messages=messages
-    )
-
 # -------------------------
 # PRIVATE MESSAGE ROUTES
-# -------------------------
+#------------------------
 
 @app.route("/messages/<int:user_id>", methods=["GET", "POST"])
 @login_required
 def private_messages(user_id):
     conn = get_db_connection()
-    current_user_id = session["user_id"]
+    current_user_id = session.get("user_id")
 
+    # Get the user you're chatting with
     other_user = conn.execute(
         "SELECT * FROM users WHERE id = ?",
         (user_id,)
@@ -1075,6 +1067,13 @@ def private_messages(user_id):
         flash("User not found")
         return redirect(url_for("home"))
 
+    # Prevent messaging yourself
+    if current_user_id == user_id:
+        conn.close()
+        flash("You can't message yourself")
+        return redirect(url_for("home"))
+
+    # SEND MESSAGE
     if request.method == "POST":
         message_text = request.form.get("message_text", "").strip()
 
@@ -1092,6 +1091,7 @@ def private_messages(user_id):
         conn.close()
         return redirect(url_for("private_messages", user_id=user_id))
 
+    # LOAD CONVERSATION
     messages = conn.execute("""
         SELECT messages.*, users.username
         FROM messages
@@ -1108,25 +1108,6 @@ def private_messages(user_id):
         messages=messages,
         other_user=other_user
     )
-
-    # Load conversation
-    messages = conn.execute("""
-        SELECT messages.*, users.username
-        FROM messages
-        JOIN users ON messages.sender_id = users.id
-        WHERE (messages.sender_id = ? AND messages.receiver_id = ?)
-           OR (messages.sender_id = ? AND messages.receiver_id = ?)
-        ORDER BY messages.id ASC
-    """, (current_user_id, user_id, user_id, current_user_id)).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "private_messages.html",
-        messages=messages,
-        other_user=other_user
-    )
-
 
 @app.route("/messages/username/<username>")
 @login_required
@@ -1145,7 +1126,6 @@ def private_messages_by_username(username):
         return redirect(url_for("home"))
 
     return redirect(url_for("private_messages", user_id=user["id"]))
-
 
 # -------------------------
 # INBOX ROUTE
