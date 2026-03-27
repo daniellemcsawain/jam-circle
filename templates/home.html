@@ -113,6 +113,12 @@
                         <button type="submit">Comment</button>
                     </form>
                 {% endif %}
+               
+                {% if session["user_id"] == post["user_id"] %}
+    <form action="{{ url_for('delete_post', post_id=post['id']) }}" method="POST">
+        <button type="submit">Delete</button>
+    </form>
+{% endif %} 
 
                 {% if comments_by_post.get(post["id"]) %}
                     <div class="comments-box">
