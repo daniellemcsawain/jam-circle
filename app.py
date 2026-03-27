@@ -65,7 +65,7 @@ def get_db_connection():
 
 def add_column_if_missing(conn, table_name, column_name, column_definition):
     cursor = conn.execute(f"PRAGMA table_info({table_name})")
-    columns = [row["name"] for row in cursor.fetchall()]
+    columns = [row["1"] for row in cursor.fetchall()]
     if column_name not in columns:
         conn.execute(
             f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}"
@@ -1184,5 +1184,4 @@ def handle_join_group_room(data):
 init_db()
 
 if __name__ == "__main__":
-    init_db()
     socketio.run(app, debug=True)
