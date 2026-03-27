@@ -993,7 +993,7 @@ def create_group():
     return render_template("create_group.html")
 
 
-@app.route("/groups/join/<int:group_id>", methods=["POST"])
+@app.route("/join_group/<int:group_id>", methods=["POST"])
 @login_required
 def join_group(group_id):
     conn = get_db_connection()
