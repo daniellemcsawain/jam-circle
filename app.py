@@ -31,7 +31,7 @@ socketio = SocketIO(app, async_mode="threading")
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 if os.environ.get("RENDER"):
-    DATA_DIR = os.path.join(BASE_DIR, "data")
+    DATA_DIR = os.path.join(BASE_DIR, "data")git
 else:
     DATA_DIR = os.path.join(BASE_DIR, "local_data")
 
@@ -89,7 +89,14 @@ def init_db():
             profile_image TEXT DEFAULT ''
         )
     """)
-
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS group_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    group_id INTEGER
+)
+""")
+    
     cursor.execute ("""
     CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
