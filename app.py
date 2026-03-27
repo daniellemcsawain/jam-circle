@@ -1079,23 +1079,6 @@ def group_chat(group_id):
         group=group,
         messages=messages
     )
-@app.route("/delete_comment/<int:comment_id>", methods=["POST"])
-def delete_comment(comment_id):
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    conn = sqlite3.connect(DATABASE)
-    c = conn.cursor()
-
-    c.execute("""
-        DELETE FROM comments
-        WHERE id=? AND user_id=?
-    """, (comment_id, session["user_id"]))
-
-    conn.commit()
-    conn.close()
-
-    return redirect(request.referrer or url_for("home"))
 
 @app.route("/search_groups")
 def search_groups():
