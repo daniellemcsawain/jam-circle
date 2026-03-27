@@ -31,7 +31,7 @@ socketio = SocketIO(app, async_mode="threading")
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 if os.environ.get("RENDER"):
-    DATA_DIR = os.path.join(BASE_DIR, "data")git
+    DATA_DIR = os.path.join(BASE_DIR, "data")
 else:
     DATA_DIR = os.path.join(BASE_DIR, "local_data")
 
