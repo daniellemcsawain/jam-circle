@@ -2,21 +2,22 @@
 
 {% block content %}
 <section class="feed-section">
-    <h2>Chat with @{{ other_user["username"] }}</h2>
-
-   {% extends "base.html" %}
-
-{% block content %}
-<section class="feed-section">
     <h1>Chat with @{{ other_user["username"] }}</h1>
 
     <div class="chat-box">
         {% if messages %}
-            {% for message in messages %}
-                <p>
-                    <strong>@{{ message["username"] }}</strong>
-                    {{ message["message_text"] }}
-                </p>
+            {% for msg in messages %}
+                <div style="margin-bottom: 12px;">
+                    <strong>@{{ msg["username"] }}</strong>
+
+                    <p>{{ msg["content"] }}</p>
+
+                    {% if msg["created_at"] %}
+                        <p style="font-size:12px; opacity:0.6;">
+                            {{ msg["created_at"] }}
+                        </p>
+                    {% endif %}
+                </div>
             {% endfor %}
         {% else %}
             <p>No messages yet.</p>
@@ -26,59 +27,11 @@
     <form method="POST" action="{{ url_for('private_messages', user_id=other_user['id']) }}">
         <input
             type="text"
-            name="message_text"
+            name="content"
             placeholder="Write a message..."
             required
         >
         <button type="submit">Send</button>
     </form>
-</section>
-{% endblock %}
-
-    <hr>
-
-    {% if messages %}
-        {% for msg in messages %}
-            <div class="post-card" style="margin-bottom:16px;">
-                <p><strong>@{{ msg["username"] }}</strong></p>
-
-                {% if msg["message_text"] %}
-                    <p>{{ msg["message_text"] }}</p>
-                {% endif %}
-
-                {% if msg["file_name"] %}
-                    {% if msg["file_type"] in ["jpg", "jpeg", "png", "gif"] %}
-                        <img
-                            src="{{ url_for('uploaded_file', filename=msg['file_name']) }}"
-                            alt="attachment"
-                            style="max-width:300px; border-radius:10px;"
-                        >
-                    {% elif msg["file_type"] in ["mp4", "mov", "webm"] %}
-                        <video controls style="max-width:320px;">
-                            <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
-                        </video>
-                    {% elif msg["file_type"] in ["mp3", "wav", "m4a"] %}
-                        <audio controls>
-                            <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
-                        </audio>
-                    {% else %}
-                        <p>
-                            <a href="{{ url_for('uploaded_file', filename=msg['file_name']) }}" target="_blank">
-                                Download {{ msg["file_name"] }}
-                            </a>
-                        </p>
-                    {% endif %}
-                {% endif %}
-
-                {% if msg["created_at"] %}
-                    <p style="font-size:12px; opacity:0.7; margin-top:8px;">
-                        {{ msg["created_at"] }}
-                    </p>
-                {% endif %}
-            </div>
-        {% endfor %}
-    {% else %}
-        <p>No messages yet.</p>
-    {% endif %}
 </section>
 {% endblock %}

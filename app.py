@@ -1075,16 +1075,16 @@ def private_messages(user_id):
 
     # SEND MESSAGE
     if request.method == "POST":
-        message_text = request.form.get("message_text", "").strip()
+        content = request.form.get("content", "").strip()
 
-        if not message_text:
+        if not content:
             conn.close()
             flash("Message cannot be empty")
             return redirect(url_for("private_messages", user_id=user_id))
 
         conn.execute(
-            "INSERT INTO messages (sender_id, receiver_id, message_text) VALUES (?, ?, ?)",
-            (current_user_id, user_id, message_text)
+            "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
+            (current_user_id, user_id, content)
         )
         conn.commit()
 
