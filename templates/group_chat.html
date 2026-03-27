@@ -13,7 +13,7 @@
     >
         <input
             type="text"
-            name="message_text"
+            name="content"
             placeholder="Send a message to the group"
         >
         <input type="file" name="attachment">
@@ -27,8 +27,8 @@
             <div class="post-card" style="margin-bottom:16px;">
                 <p><strong>@{{ msg["username"] }}</strong></p>
 
-                {% if msg["message_text"] %}
-                    <p>{{ msg["message_text"] }}</p>
+                {% if msg["content"] %}
+                    <p>{{ msg["content"] }}</p>
                 {% endif %}
 
                 {% if msg["file_name"] %}

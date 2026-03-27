@@ -171,7 +171,7 @@ def init_db():
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER,
             group_id INTEGER,
-            message_text TEXT,
+             TEXT,
             file_name TEXT,
             file_type TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -319,6 +319,16 @@ def fetch_posts_with_counts(conn, user_id=None, only_username=None):
 
     return posts, comments_by_post, liked_post_ids
 
+    content = request.form.get("content")
+
+    if not content:
+        flash("Message can't be empty")
+    return redirect(url_for("messages", user_id=user_id))
+
+    c.execute("""
+    INSERT INTO messages (sender_id, receiver_id, content)
+    VALUES (?, ?, ?)
+""", (sender_id, user_id, content))
 
 # -------------------------
 # BASIC ROUTES
@@ -1015,15 +1025,15 @@ def group_chat(group_id):
         return redirect(url_for("groups"))
 
     if request.method == "POST":
-        message_text = request.form.get("message_text", "").strip()
+        content = request.form.get("content", "").strip()
 
-        if not message_text:
+        if not content:
             conn.close()
             return redirect(url_for("group_chat", group_id=group_id))
 
         conn.execute(
-            "INSERT INTO messages (sender_id, group_id, message_text) VALUES (?, ?, ?)",
-            (session["user_id"], group_id, message_text)
+            "INSERT INTO messages (sender_id, group_id, content) VALUES (?, ?, ?)",
+            (session["user_id"], group_id, content)
         )
 
         conn.commit()
