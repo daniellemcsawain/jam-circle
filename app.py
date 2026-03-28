@@ -1,4 +1,4 @@
-
+print("APP VERSION 2 RUNNING")
 import os
 import sqlite3
 import uuid
