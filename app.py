@@ -1007,7 +1007,7 @@ def search_groups():
 
     return render_template("groups.html", groups=groups)
 # -------------------------
-# PRIVATE MESSAGE ROUTES
+# MESSAGE ROUTES
 #------------------------
 
 @app.route("/messages/<int:user_id>", methods=["GET", "POST"])
@@ -1033,16 +1033,29 @@ def private_messages(user_id):
 
     # ✅ SEND MESSAGE (FIXED)
     if request.method == "POST":
-        content = request.form.get("content", "").strip()
+    content = request.form.get("content", "").strip()
+    file = request.files.get("file")
 
-        if content:
-            conn.execute(
-                "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
-                (current_user_id, user_id, content)
-            )
-            conn.commit()
+    file_name = ""
+    file_type = ""
 
+    if file and file.filename:
+        saved = save_uploaded_file(file)
+        if saved:
+            file_name = saved
+            file_type = saved.split(".")[-1].lower()
+
+    if not content and not file_name:
         return redirect(url_for("private_messages", user_id=user_id))
+
+    conn.execute("""
+        INSERT INTO messages (sender_id, receiver_id, content, file_name, file_type)
+        VALUES (?, ?, ?, ?, ?)
+    """, (current_user_id, user_id, content, file_name, file_type))
+
+    conn.commit()
+
+    return redirect(url_for("private_messages", user_id=user_id))
 
     # ✅ LOAD CONVERSATION
     messages = conn.execute("""
