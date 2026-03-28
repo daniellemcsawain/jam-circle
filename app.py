@@ -155,20 +155,17 @@ def init_db():
     """)
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sender_id INTEGER NOT NULL,
-            receiver_id INTEGER,
-            group_id INTEGER,
-            content TEXT,
-            file_name TEXT,
-            file_type TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE,
-            FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE,
-            FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
-        )
-    """)
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL,
+    receiver_id INTEGER,
+    group_id INTEGER,
+    content TEXT,
+    file_name TEXT,
+    file_type TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
 
     conn.commit()
 
@@ -971,9 +968,8 @@ def create_group():
 def join_group(group_id):
     conn = get_db_connection()
 
-    
     existing = conn.execute(
-        "SELECT * FROM group_members WHERE user_id = ? AND group_id = ?",
+        "SELECT 1 FROM group_members WHERE user_id=? AND group_id=?",
         (session["user_id"], group_id)
     ).fetchone()
 
@@ -984,25 +980,9 @@ def join_group(group_id):
         )
         conn.commit()
 
-    conn.close()
 
+    conn.close()
     return redirect(url_for("group_chat", group_id=group_id))
-
-    messages = conn.execute("""
-        SELECT messages.*, users.username
-        FROM messages
-        JOIN users ON messages.sender_id = users.id
-        WHERE group_id = ?
-        ORDER BY messages.id ASC
-    """, (group_id,)).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "group_chat.html",
-        group=group,
-        messages=messages
-    )
 
 @app.route("/search_groups")
 def search_groups():
@@ -1049,24 +1029,9 @@ def private_messages(user_id):
 
     # SEND MESSAGE
     if request.method == "POST":
-        content = request.form.get("content", "").strip()
-
-        if not content:
-            conn.close()
-            flash("Message cannot be empty")
-            return redirect(url_for("private_messages", user_id=user_id))
-
-        conn.execute(
-            "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
-            (current_user_id, user_id, content)
-        )
-        conn.commit()
-
-        conn.close()
-        return redirect(url_for("private_messages", user_id=user_id))
 
     # LOAD CONVERSATION
-    messages = conn.execute("""
+        messages = conn.execute("""
         SELECT messages.*, users.username
         FROM messages
         JOIN users ON messages.sender_id = users.id
@@ -1083,23 +1048,7 @@ def private_messages(user_id):
         other_user=other_user
     )
 
-@app.route("/messages/username/<username>")
-@login_required
-def private_messages_by_username(username):
-    conn = get_db_connection()
 
-    user = conn.execute(
-        "SELECT * FROM users WHERE username = ?",
-        (username,)
-    ).fetchone()
-
-    conn.close()
-
-    if not user:
-        flash("User not found")
-        return redirect(url_for("home"))
-
-    return redirect(url_for("private_messages", user_id=user["id"]))
 
 # -------------------------
 # INBOX ROUTE
