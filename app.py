@@ -1022,7 +1022,7 @@ def group_chat(group_id):
         return redirect(url_for("groups"))
 
     if request.method == "POST":
-    content = request.form.get("content", "").strip()
+       content = request.form.get("content", "").strip()
     file = request.files.get("attachment")
 
     file_name = ""
