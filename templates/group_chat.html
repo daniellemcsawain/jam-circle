@@ -1,69 +1,76 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="feed-section">
-    <h2>{{ group["name"] }}</h2>
-    <p>{{ group["description"] }}</p>
+<section class="feed-section" style="
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+">
 
-    <form
-        method="POST"
-        enctype="multipart/form-data"
-        action="{{ url_for('group_chat', group_id=group['id']) }}"
-        style="display:grid; gap:10px; margin-bottom:20px;"
-    >
+    <h2 style="margin-bottom:8px;">Create a Jam Circle 🎶</h2>
+
+    <p style="opacity:0.7; max-width:400px; text-align:center; margin-bottom:20px;">
+        Start a group, meet musicians, and jam with people on campus.
+    </p>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div style="margin-bottom:12px;">
+                {% for message in messages %}
+                    <p style="color:red;">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('create_group') }}" style="
+        display:flex;
+        flex-direction:column;
+        gap:12px;
+        width:100%;
+        max-width:500px;
+    ">
+
         <input
             type="text"
-            name="content"
-            placeholder="Send a message to the group"
+            name="name"
+            placeholder="🎸 Group name (ex: Dorm Guitar Jam)"
+            style="
+                padding:12px;
+                border-radius:10px;
+                border:none;
+                background:#2a2a2a;
+                color:white;
+            "
+            required
         >
-        <input type="file" name="attachment">
-        <button type="submit">Send</button>
+
+        <textarea
+            name="description"
+            placeholder="Describe your vibe (acoustic? rap? beginner friendly?)"
+            rows="5"
+            style="
+                padding:12px;
+                border-radius:10px;
+                border:none;
+                background:#2a2a2a;
+                color:white;
+            "
+            required
+        ></textarea>
+
+        <button type="submit" style="
+            padding:12px;
+            border-radius:12px;
+            border:none;
+            background:#7ed957;
+            font-weight:bold;
+            font-size:16px;
+        ">
+            🚀 Create Jam Circle
+        </button>
+
     </form>
 
-    <hr>
-
-    {% if messages %}
-        {% for msg in messages %}
-            <div class="post-card" style="margin-bottom:16px;">
-                <p><strong>@{{ msg["username"] }}</strong></p>
-
-                {% if msg["content"] %}
-                    <p>{{ msg["content"] }}</p>
-                {% endif %}
-
-                {% if msg["file_name"] %}
-                    {% if msg["file_type"] in ["jpg", "jpeg", "png", "gif"] %}
-                        <img
-                            src="{{ url_for('uploaded_file', filename=msg['file_name']) }}"
-                            alt="attachment"
-                            style="max-width:300px; border-radius:10px;"
-                        >
-                    {% elif msg["file_type"] in ["mp4", "mov", "webm"] %}
-                        <video controls style="max-width:320px;">
-                            <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
-                        </video>
-                    {% elif msg["file_type"] in ["mp3", "wav", "m4a"] %}
-                        <audio controls>
-                            <source src="{{ url_for('uploaded_file', filename=msg['file_name']) }}">
-                        </audio>
-                    {% else %}
-                        <p>
-                            <a href="{{ url_for('uploaded_file', filename=msg['file_name']) }}" target="_blank">
-                                Download {{ msg["file_name"] }}
-                            </a>
-                        </p>
-                    {% endif %}
-                {% endif %}
-
-                {% if msg["created_at"] %}
-                    <p style="font-size:12px; opacity:0.7; margin-top:8px;">
-                        {{ msg["created_at"] }}
-                    </p>
-                {% endif %}
-            </div>
-        {% endfor %}
-    {% else %}
-        <p>No group messages yet.</p>
-    {% endif %}
 </section>
 {% endblock %}

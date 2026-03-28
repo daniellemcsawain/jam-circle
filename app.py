@@ -30,10 +30,7 @@ socketio = SocketIO(app, async_mode="threading")
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-if os.environ.get("RENDER"):
-    DATA_DIR = os.path.join(BASE_DIR, "data")
-else:
-    DATA_DIR = os.path.join(BASE_DIR, "local_data")
+DATA_DIR = os.path.join(BASE_DIR, "local_data")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -74,7 +71,7 @@ def add_column_if_missing(conn, table_name, column_name, column_definition):
 
 
 def init_db():
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -89,22 +86,7 @@ def init_db():
             profile_image TEXT DEFAULT ''
         )
     """)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS group_members (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    group_id INTEGER
-)
-""")
-    
-    cursor.execute ("""
-    CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sender_id INTEGER NOT NULL,
-    receiver_id INTEGER NOT NULL,
-    content TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) """)
+
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS posts (
@@ -326,16 +308,7 @@ def fetch_posts_with_counts(conn, user_id=None, only_username=None):
 
     return posts, comments_by_post, liked_post_ids
 
-    content = request.form.get("content")
-
-    if not content:
-        flash("Message can't be empty")
-    return redirect(url_for("messages", user_id=user_id))
-
-    c.execute("""
-    INSERT INTO messages (sender_id, receiver_id, content)
-    VALUES (?, ?, ?)
-""", (sender_id, user_id, content))
+  
 
 # -------------------------
 # BASIC ROUTES
@@ -1049,20 +1022,38 @@ def group_chat(group_id):
         return redirect(url_for("groups"))
 
     if request.method == "POST":
-        content = request.form.get("content", "").strip()
+    content = request.form.get("content", "").strip()
+    file = request.files.get("attachment")
 
-        if not content:
+    file_name = ""
+    file_type = ""
+
+    # handle file upload
+    if file and file.filename:
+        saved_name = save_uploaded_file(file)
+        if saved_name is None:
             conn.close()
+            flash("File type not allowed")
             return redirect(url_for("group_chat", group_id=group_id))
 
-        conn.execute(
-            "INSERT INTO messages (sender_id, group_id, content) VALUES (?, ?, ?)",
-            (session["user_id"], group_id, content)
-        )
+        file_name = saved_name
+        file_type = saved_name.split(".")[-1].lower()
 
-        conn.commit()
-
+    if not content and not file_name:
+        conn.close()
         return redirect(url_for("group_chat", group_id=group_id))
+
+    conn.execute(
+        """
+        INSERT INTO messages (sender_id, group_id, content, file_name, file_type)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (session["user_id"], group_id, content, file_name, file_type)
+    )
+
+    conn.commit()
+
+    return redirect(url_for("group_chat", group_id=group_id))
 
     messages = conn.execute("""
         SELECT messages.*, users.username

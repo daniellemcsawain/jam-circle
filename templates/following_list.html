@@ -7,7 +7,7 @@
     {% if users %}
         <div style="display:grid; gap:16px;">
             {% for user in users %}
-                <div class="post-card">
+                <div class="post-card" style="background:#1a1a1a; padding:12px; border-radius:12px;">
                     <p>
                         <strong>
                             <a href="{{ url_for('profile', username=user['username']) }}">

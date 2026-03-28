@@ -16,7 +16,7 @@
     {% if groups %}
         <div style="display:grid; gap:16px;">
             {% for group in groups %}
-                <div class="post-card">
+                <div class="post-card" style="background:#1a1a1a; padding:12px; border-radius:12px;">
                     <h3 style="margin-top:0;">{{ group["name"] }}</h3>
                     <p>{{ group["description"] }}</p>
                     <p>Members: {{ group["member_count"] }}</p>

@@ -14,7 +14,7 @@
 
     {% if posts %}
         {% for post in posts %}
-            <div class="post-card">
+            <div class="post-card" style="background:#1a1a1a; padding:12px; border-radius:12px;">
                 <div class="post-header">
                     {% if post["profile_image"] %}
                         <img
@@ -88,7 +88,7 @@
                             </form>
                         {% else %}
                             <form method="POST" action="{{ url_for('like_post', post_id=post['id']) }}">
-                                <button type="submit" class="button-link">Like</button>
+                               <button type="submit" class="button-link">Like</button>
                             </form>
                         {% endif %}
 
@@ -115,21 +115,17 @@
                 {% endif %}
                
                 {% if session.get("user_id") == post["user_id"] %}
-    <form action="{{ url_for('delete_post', post_id=post['id']) }}" method="POST">
-        <button type="submit">Delete</button>
+    <form method="POST" action="{{ url_for('delete_post', post_id=post['id']) }}">
+        <button type="submit" class="button-link" style="color:red;">Delete Post</button>
     </form>
-{% endif %} 
+{% endif %}
 
                 {% if comments_by_post.get(post["id"]) %}
-                    <div class="comments-box">
-                        {% for comment in comments_by_post[post["id"]] %}
-                            <div class="comment-row">
-                                <p><strong>@{{ comment["username"] }}</strong> {{ comment["content"] }}</p>
-                                <form method="POST" action="{{ url_for('delete_comment', comment_id=comment['id']) }}">
-    <button type="submit">Delete</button>
-</form>
-                            </div>
-                        {% endfor %}
+                   {% if session.get("user_id") == post["user_id"] %}
+    <form method="POST" action="{{ url_for('delete_post', post_id=post['id']) }}">
+        <button type="submit" class="button-link" style="color:red;">Delete Post</button>
+    </form>
+{% endif %}
                     </div>
                 {% endif %}
             </div>

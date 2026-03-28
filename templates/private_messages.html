@@ -1,39 +1,59 @@
+<div style="
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+">
+    <h2 style="margin:0;">@{{ other_user["username"] }}</h2>
+</div>
 {% extends "base.html" %}
 
 {% block content %}
 <section class="feed-section">
     <h1>Chat with @{{ other_user["username"] }}</h1>
 
-    <div class="chat-box">
-        {% if messages %}
-            {% for msg in messages %}
-                <div style="margin-bottom: 12px;">
-                    <strong>@{{ msg["username"] }}</strong>
+   <input
+    type="text"
+    name="content"
+    placeholder="Write a comment..."
+    style="flex:1; padding:8px; border-radius:8px;"
+>
 
-                    {% if msg["content"] %}
-                        <p>{{ msg["content"] }}</p>
-                    {% endif %}
+    <form method="POST" action="{{ url_for('private_messages', user_id=other_user['id']) }}" style="
+    display:flex;
+    gap:8px;
+">
 
-                    {% if msg["created_at"] %}
-                        <p style="font-size:12px; opacity:0.6;">
-                            {{ msg["created_at"] }}
-                        </p>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        {% else %}
-            <p>No messages yet.</p>
-        {% endif %}
-    </div>
+    <input
+        type="text"
+        name="content"
+        placeholder="Message @{{ other_user['username'] }}"
+        style="
+            flex:1;
+            padding:10px;
+            border-radius:20px;
+            border:none;
+            background:#2a2a2a;
+            color:white;
+        "
+        required
+    >
 
-    <form method="POST" action="{{ url_for('private_messages', user_id=other_user['id']) }}">
-        <input
-            type="text"
-            name="content"
-            placeholder="Write a message..."
-            required
-        >
-        <button type="submit">Send</button>
-    </form>
+    <button type="submit" style="
+        padding:10px 16px;
+        border-radius:20px;
+        border:none;
+        background:#7ed957;
+        font-weight:bold;
+    ">
+        Send
+    </button>
+</form>
 </section>
 {% endblock %}
+<script>
+    const chatBox = document.querySelector(".chat-box");
+    if (chatBox) {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
