@@ -971,7 +971,7 @@ def create_group():
 def join_group(group_id):
     conn = get_db_connection()
 
-    # check if already joined
+    
     existing = conn.execute(
         "SELECT * FROM group_members WHERE user_id = ? AND group_id = ?",
         (session["user_id"], group_id)
