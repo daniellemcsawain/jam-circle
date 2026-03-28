@@ -1010,7 +1010,6 @@ def private_messages(user_id):
     conn = get_db_connection()
     current_user_id = session.get("user_id")
 
-    # Get the user you're chatting with
     other_user = conn.execute(
         "SELECT * FROM users WHERE id = ?",
         (user_id,)
@@ -1021,17 +1020,26 @@ def private_messages(user_id):
         flash("User not found")
         return redirect(url_for("home"))
 
-    # Prevent messaging yourself
     if current_user_id == user_id:
         conn.close()
         flash("You can't message yourself")
         return redirect(url_for("home"))
 
-    # SEND MESSAGE
+    # ✅ SEND MESSAGE (FIXED)
     if request.method == "POST":
+        content = request.form.get("content", "").strip()
 
-    # LOAD CONVERSATION
-        messages = conn.execute("""
+        if content:
+            conn.execute(
+                "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
+                (current_user_id, user_id, content)
+            )
+            conn.commit()
+
+        return redirect(url_for("private_messages", user_id=user_id))
+
+    # ✅ LOAD CONVERSATION
+    messages = conn.execute("""
         SELECT messages.*, users.username
         FROM messages
         JOIN users ON messages.sender_id = users.id
@@ -1047,9 +1055,6 @@ def private_messages(user_id):
         messages=messages,
         other_user=other_user
     )
-
-
-
 # -------------------------
 # INBOX ROUTE
 # -------------------------
