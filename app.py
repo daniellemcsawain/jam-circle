@@ -160,7 +160,7 @@ def init_db():
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER,
             group_id INTEGER,
-             TEXT,
+            content TEXT,
             file_name TEXT,
             file_type TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -967,91 +967,24 @@ def create_group():
 
 
 @app.route("/join_group/<int:group_id>", methods=["POST"])
-def join_group(group_id):
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    user_id = session["user_id"]
-
-    conn = sqlite3.connect(DATABASE)
-    c = conn.cursor()
-
-    # make sure table exists
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS group_members (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        group_id INTEGER
-    )
-    """)
-
-    # prevent duplicate join
-    c.execute("""
-        SELECT * FROM group_members WHERE user_id=? AND group_id=?
-    """, (user_id, group_id))
-
-    if not c.fetchone():
-        c.execute("""
-            INSERT INTO group_members (user_id, group_id)
-            VALUES (?, ?)
-        """, (user_id, group_id))
-
-    conn.commit()
-    conn.close()
-
-    # ✅ THIS IS THE IMPORTANT FIX
-    return redirect(url_for("group_chat", group_id=group_id))
-@app.route("/groups/<int:group_id>", methods=["GET", "POST"])
 @login_required
-def group_chat(group_id):
+def join_group(group_id):
     conn = get_db_connection()
 
-    group = conn.execute(
-        "SELECT * FROM groups WHERE id = ?",
-        (group_id,)
+    # check if already joined
+    existing = conn.execute(
+        "SELECT * FROM group_members WHERE user_id = ? AND group_id = ?",
+        (session["user_id"], group_id)
     ).fetchone()
 
-    membership = conn.execute(
-        "SELECT * FROM group_members WHERE group_id = ? AND user_id = ?",
-        (group_id, session["user_id"])
-    ).fetchone()
+    if not existing:
+        conn.execute(
+            "INSERT INTO group_members (user_id, group_id) VALUES (?, ?)",
+            (session["user_id"], group_id)
+        )
+        conn.commit()
 
-    if not membership:
-        conn.close()
-        flash("Join the group first")
-        return redirect(url_for("groups"))
-
-    if request.method == "POST":
-       content = request.form.get("content", "").strip()
-    file = request.files.get("attachment")
-
-    file_name = ""
-    file_type = ""
-
-    # handle file upload
-    if file and file.filename:
-        saved_name = save_uploaded_file(file)
-        if saved_name is None:
-            conn.close()
-            flash("File type not allowed")
-            return redirect(url_for("group_chat", group_id=group_id))
-
-        file_name = saved_name
-        file_type = saved_name.split(".")[-1].lower()
-
-    if not content and not file_name:
-        conn.close()
-        return redirect(url_for("group_chat", group_id=group_id))
-
-    conn.execute(
-        """
-        INSERT INTO messages (sender_id, group_id, content, file_name, file_type)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (session["user_id"], group_id, content, file_name, file_type)
-    )
-
-    conn.commit()
+    conn.close()
 
     return redirect(url_for("group_chat", group_id=group_id))
 
