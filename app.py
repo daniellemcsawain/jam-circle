@@ -920,17 +920,23 @@ def groups():
     conn = get_db_connection()
 
     groups = conn.execute("""
-        SELECT groups.*, COUNT(group_members.id) AS member_count
+        SELECT 
+            groups.id,
+            groups.name,
+            groups.description,
+            COUNT(group_members.id) AS member_count
         FROM groups
-        LEFT JOIN group_members ON groups.id = group_members.group_id
-        GROUP BY groups.id
+        LEFT JOIN group_members 
+            ON groups.id = group_members.group_id
+        GROUP BY groups.id, groups.name, groups.description
     """).fetchall()
 
     conn.close()
+
     return render_template("groups.html", groups=groups)
 
 
-@app.route("/groups/create", methods=["GET", "POST"])
+@app.route("groups/create", methods=["GET", "POST"])
 @login_required
 def create_group():
     if request.method == "POST":
