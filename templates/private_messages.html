@@ -1,59 +1,116 @@
-<div style="
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:16px;
-">
-    <h2 style="margin:0;">@{{ other_user["username"] }}</h2>
-</div>
 {% extends "base.html" %}
 
 {% block content %}
-<section class="feed-section">
-    <h1>Chat with @{{ other_user["username"] }}</h1>
 
-   <input
-    type="text"
-    name="content"
-    placeholder="Write a comment..."
-    style="flex:1; padding:8px; border-radius:8px;"
->
+<section style="max-width:600px; margin:auto;">
 
-    <form method="POST" action="{{ url_for('private_messages', user_id=other_user['id']) }}" style="
-    display:flex;
-    gap:8px;
-">
+    <!-- HEADER -->
+    <div style="margin-bottom:16px;">
+        <h2>@{{ other_user["username"] }}</h2>
+    </div>
 
-    <input
-        type="text"
-        name="content"
-        placeholder="Message @{{ other_user['username'] }}"
-        style="
-            flex:1;
-            padding:10px;
+    <!-- CHAT BOX -->
+    <div id="chat-box" style="
+        height:400px;
+        overflow-y:auto;
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        margin-bottom:20px;
+    ">
+
+        {% for msg in messages %}
+            <div style="
+                display:flex;
+                justify-content:
+                {% if msg['sender_id'] == session.get('user_id') %}
+                    flex-end
+                {% else %}
+                    flex-start
+                {% endif %}
+            ">
+
+                <div style="
+                    max-width:70%;
+                    padding:10px;
+                    border-radius:12px;
+                    background:
+                    {% if msg['sender_id'] == session.get('user_id') %}
+                        #7ed957
+                    {% else %}
+                        #2a2a2a
+                    {% endif %}
+                ">
+
+                    <!-- TEXT -->
+                    {% if msg["content"] %}
+                        <p style="margin:0;">{{ msg["content"] }}</p>
+                    {% endif %}
+
+                    <!-- IMAGE -->
+                    {% if msg["file_name"] %}
+                        {% if msg["file_type"] in ["jpg","jpeg","png","gif"] %}
+                            <img 
+                                src="{{ url_for('uploaded_file', filename=msg['file_name']) }}" 
+                                style="max-width:200px; margin-top:8px; border-radius:10px;"
+                            >
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- TIME -->
+                    <p style="font-size:10px; opacity:0.6; margin-top:4px;">
+                        {{ msg["created_at"] }}
+                    </p>
+
+                </div>
+            </div>
+        {% endfor %}
+
+    </div>
+
+    <!-- MESSAGE FORM -->
+    <form method="POST" enctype="multipart/form-data" style="
+        display:flex;
+        gap:8px;
+        align-items:center;
+    ">
+
+        <input
+            type="text"
+            name="content"
+            placeholder="Message..."
+            style="
+                flex:1;
+                padding:10px;
+                border-radius:20px;
+                border:none;
+                background:#2a2a2a;
+                color:white;
+            "
+        >
+
+        <input type="file" name="file" accept="image/*">
+
+        <button type="submit" style="
+            padding:10px 14px;
             border-radius:20px;
             border:none;
-            background:#2a2a2a;
-            color:white;
-        "
-        required
-    >
+            background:#7ed957;
+            font-weight:bold;
+        ">
+            Send
+        </button>
 
-    <button type="submit" style="
-        padding:10px 16px;
-        border-radius:20px;
-        border:none;
-        background:#7ed957;
-        font-weight:bold;
-    ">
-        Send
-    </button>
-</form>
+    </form>
+
 </section>
-{% endblock %}
+
+<!-- AUTO SCROLL -->
 <script>
-    const chatBox = document.querySelector(".chat-box");
+    const chatBox = document.getElementById("chat-box");
     if (chatBox) {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 </script>
+
+{% endblock %}
