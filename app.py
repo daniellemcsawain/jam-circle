@@ -1033,7 +1033,7 @@ def private_messages(user_id):
 
     # ✅ SEND MESSAGE (FIXED)
     if request.method == "POST":
-    content = request.form.get("content", "").strip()
+       content = request.form.get("content", "").strip()
     file = request.files.get("file")
 
     file_name = ""
