@@ -197,13 +197,6 @@ def private_messages(user_id):
     return render_template("private_messages.html", messages=msgs, other_user=other)
 
 # --- GROUPS ---
-@app.route("/groups")
-@login_required
-def groups():
-    conn = get_db_connection()
-    g_list = conn.execute("SELECT g.*, (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) as member_count FROM groups g").fetchall()
-    conn.close()
-    return render_template("groups.html", groups=g_list)
 
 @app.route("/create_group", methods=["GET", "POST"])
 @login_required

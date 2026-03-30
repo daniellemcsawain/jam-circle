@@ -12,9 +12,8 @@
     <a href="{{ url_for('home') }}">Home</a>
     {% if session.get('user_id') %}
         <a href="{{ url_for('post') }}">Post</a>
-        <a href="{{ url_for('groups') }}">Jam Circles</a>
         <a href="{{ url_for('search') }}">Search Musicians</a>
-        <a href="{{ url_for('create_group') }}">Create Group</a>
+        <a href="{{ url_for('create_group') }}">Create Jam circle</a>
         <a href="{{ url_for('inbox') }}">Messages</a>
         <a href="{{ url_for('profile', username=session['username']) }}">Profile</a>
         <a href="{{ url_for('logout') }}">Logout</a>
