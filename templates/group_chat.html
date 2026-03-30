@@ -1,76 +1,24 @@
 {% extends "base.html" %}
-
 {% block content %}
-<section class="feed-section" style="
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-">
+<section class="feed-section">
+    <div class="chat-header">
+        <h2>{{ group['name'] }} 🎸</h2>
+        <p>{{ group['description'] }}</p>
+    </div>
 
-    <h2 style="margin-bottom:8px;">Create a Jam Circle 🎶</h2>
-
-    <p style="opacity:0.7; max-width:400px; text-align:center; margin-bottom:20px;">
-        Start a group, meet musicians, and jam with people on campus.
-    </p>
-
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div style="margin-bottom:12px;">
-                {% for message in messages %}
-                    <p style="color:red;">{{ message }}</p>
-                {% endfor %}
+    <div class="chat-box" style="background: #1a1a1a; padding: 20px; border-radius: 12px; height: 400px; overflow-y: scroll; margin-bottom: 20px;">
+        {% for msg in messages %}
+            <div class="message" style="margin-bottom: 10px;">
+                <strong style="color: #7ed957;">@{{ msg['username'] }}:</strong>
+                <span style="color: white;">{{ msg['content'] }}</span>
+                <small style="display: block; font-size: 10px; opacity: 0.5;">{{ msg['created_at'] }}</small>
             </div>
-        {% endif %}
-    {% endwith %}
+        {% endfor %}
+    </div>
 
-    <form method="POST" action="{{ url_for('create_group') }}" style="
-        display:flex;
-        flex-direction:column;
-        gap:12px;
-        width:100%;
-        max-width:500px;
-    ">
-
-        <input
-            type="text"
-            name="name"
-            placeholder="🎸 Group name (ex: Dorm Guitar Jam)"
-            style="
-                padding:12px;
-                border-radius:10px;
-                border:none;
-                background:#2a2a2a;
-                color:white;
-            "
-            required
-        >
-
-        <textarea
-            name="description"
-            placeholder="Describe your vibe (acoustic? rap? beginner friendly?)"
-            rows="5"
-            style="
-                padding:12px;
-                border-radius:10px;
-                border:none;
-                background:#2a2a2a;
-                color:white;
-            "
-            required
-        ></textarea>
-
-        <button type="submit" style="
-            padding:12px;
-            border-radius:12px;
-            border:none;
-            background:#7ed957;
-            font-weight:bold;
-            font-size:16px;
-        ">
-            🚀 Create Jam Circle
-        </button>
-
+    <form method="POST" class="comment-form" style="display: flex; gap: 10px;">
+        <input type="text" name="content" placeholder="Send a message to the circle..." required style="flex: 1; padding: 10px; border-radius: 8px;">
+        <button type="submit" style="background: #7ed957; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold;">Send</button>
     </form>
-
 </section>
 {% endblock %}
