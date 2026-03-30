@@ -129,14 +129,26 @@ def logout():
 def groups():
     conn = get_db_connection()
 
-    groups = conn.execute("""
-        SELECT groups.*, COUNT(group_members.id) as member_count
-        FROM groups
-        LEFT JOIN group_members ON groups.id = group_members.group_id
-        GROUP BY groups.id
-    """).fetchall()
+    try:
+        groups = conn.execute("""
+            SELECT 
+                groups.id,
+                groups.name,
+                groups.description,
+                COUNT(group_members.id) as member_count
+            FROM groups
+            LEFT JOIN group_members 
+                ON groups.id = group_members.group_id
+            GROUP BY groups.id, groups.name, groups.description
+        """).fetchall()
+    except Exception as e:
+        print("GROUP ERROR:", e)
+
+        # fallback (prevents crash)
+        groups = conn.execute("SELECT id, name, description FROM groups").fetchall()
 
     conn.close()
+
     return render_template("groups.html", groups=groups)
 
 @app.route("/groups/create", methods=["GET","POST"])
