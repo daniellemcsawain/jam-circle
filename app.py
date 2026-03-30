@@ -143,18 +143,53 @@ def like_post(post_id):
     return redirect(request.referrer or url_for('home')) # Placeholder for like logic
 
 # --- PROFILE & FOLLOWS ---
+# --- FIX FOR GROUPS ---
+@app.route("/groups")
+@login_required
+def groups():
+    conn = get_db_connection()
+    # Updated query to prevent the .get() error in your logs
+    g_list = conn.execute("""
+        SELECT g.*, (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) as member_count 
+        FROM groups g
+    """).fetchall()
+    conn.close()
+    return render_template("groups.html", groups=g_list)
+
+@app.route("/create_group", methods=["GET", "POST"])
+@login_required
+def create_group():
+    if request.method == "POST":
+        conn = get_db_connection()
+        cur = conn.execute("INSERT INTO groups (name, description, creator_id) VALUES (?,?,?)", 
+                         (request.form['name'], request.form['description'], session['user_id']))
+        # Automatically join the group you just created
+        conn.execute("INSERT INTO group_members (group_id, user_id) VALUES (?,?)", 
+                    (cur.lastrowid, session['user_id']))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("groups")) # Corrected from group_chat.html
+    return render_template("create_group.html")
+
+# --- FIX FOR PROFILE ---
 @app.route("/profile/<username>")
 @login_required
 def profile(username):
     conn = get_db_connection()
     user = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
-    if not user: return "User not found", 404
+    if not user:
+        conn.close()
+        return "User not found", 404
+    
+    # Fetch posts and comments so the profile doesn't crash
     posts = conn.execute("SELECT * FROM posts WHERE user_id=?", (user["id"],)).fetchall()
-    f_count = conn.execute("SELECT COUNT(*) FROM follows WHERE following_id=?", (user["id"],)).fetchone()[0]
-    ing_count = conn.execute("SELECT COUNT(*) FROM follows WHERE follower_id=?", (user["id"],)).fetchone()[0]
-    is_following = conn.execute("SELECT 1 FROM follows WHERE follower_id=? AND following_id=?", (session['user_id'], user['id'])).fetchone()
+    comments = conn.execute("SELECT * FROM comments").fetchall()
+    comments_dict = {}
+    for c in comments:
+        comments_dict.setdefault(c['post_id'], []).append(c)
+        
     conn.close()
-    return render_template("profile.html", profile_user=user, posts=posts, follower_count=f_count, following_count=ing_count, is_following=is_following, comments_by_post={})
+    return render_template("profile.html", profile_user=user, posts=posts, comments_by_post=comments_dict)
 
 @app.route("/follow/<int:user_id>", methods=["POST"])
 @login_required
@@ -231,13 +266,18 @@ def search_groups():
 
     return render_template("groups.html", groups=groups)
 
-@app.route("/groups") # <--- Make sure this has the 's'
+@app.route("/groups")
 @login_required
 def groups():
     conn = get_db_connection()
-    g_list = conn.execute("SELECT * FROM groups").fetchall()
+    # Updated query to prevent the .get() error in your logs
+    g_list = conn.execute("""
+        SELECT g.*, (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) as member_count 
+        FROM groups g
+    """).fetchall()
     conn.close()
     return render_template("groups.html", groups=g_list)
+
 @app.route("/group_chat/<int:group_id>", methods=["GET", "POST"])
 @login_required
 def group_chat(group_id):
