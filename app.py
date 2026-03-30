@@ -203,12 +203,18 @@ def private_messages(user_id):
 def create_group():
     if request.method == "POST":
         conn = get_db_connection()
-        cur = conn.execute("INSERT INTO groups (name, description, creator_id) VALUES (?,?,?)", (request.form['name'], request.form['description'], session['user_id']))
-        conn.execute("INSERT INTO group_members (group_id, user_id) VALUES (?,?)", (cur.lastrowid, session['user_id']))
+        # Creates the group
+        cur = conn.execute("INSERT INTO groups (name, description, creator_id) VALUES (?,?,?)", 
+                         (request.form['name'], request.form['description'], session['user_id']))
+        # Automatically adds the creator as the first member
+        conn.execute("INSERT INTO group_members (group_id, user_id) VALUES (?,?)", 
+                    (cur.lastrowid, session['user_id']))
         conn.commit()
         conn.close()
-        return redirect(url_for("group_chat.html"))
+        # SUCCESSFUL FIX: Redirect to the 'groups' function name
+        return redirect(url_for("groups")) 
     return render_template("create_group.html")
+
 @app.route("/groups") # <--- Make sure this has the 's'
 @login_required
 def groups():
