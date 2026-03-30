@@ -936,7 +936,7 @@ def groups():
     return render_template("groups.html", groups=groups)
 
 
-@app.route("groups/create", methods=["GET", "POST"])
+@app.route("/groups/create", methods=["GET", "POST"])
 @login_required
 def create_group():
     if request.method == "POST":
