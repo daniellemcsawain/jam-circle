@@ -156,20 +156,6 @@ def groups():
     conn.close()
     return render_template("groups.html", groups=g_list)
 
-@app.route("/create_group", methods=["GET", "POST"])
-@login_required
-def create_group():
-    if request.method == "POST":
-        conn = get_db_connection()
-        cur = conn.execute("INSERT INTO groups (name, description, creator_id) VALUES (?,?,?)", 
-                         (request.form['name'], request.form['description'], session['user_id']))
-        # Automatically join the group you just created
-        conn.execute("INSERT INTO group_members (group_id, user_id) VALUES (?,?)", 
-                    (cur.lastrowid, session['user_id']))
-        conn.commit()
-        conn.close()
-        return redirect(url_for("groups")) # Corrected from group_chat.html
-    return render_template("create_group.html")
 
 # --- FIX FOR PROFILE ---
 @app.route("/profile/<username>")
