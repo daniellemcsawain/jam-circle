@@ -210,13 +210,36 @@ def groups():
 @login_required
 def create_group():
     if request.method == "POST":
+        name = request.form.get('name')
+        description = request.form.get('description')
+        user_id = session.get('user_id')
+        
+        if not name or not description:
+            flash("Please fill out all fields.")
+            return redirect(url_for('create_group'))
+
         conn = get_db_connection()
-        cur = conn.execute("INSERT INTO groups (name, description, creator_id) VALUES (?,?,?)", 
-                           (request.form['name'], request.form['description'], session['user_id']))
-        conn.execute("INSERT INTO group_members (group_id, user_id) VALUES (?,?)", (cur.lastrowid, session['user_id']))
-        conn.commit()
-        conn.close()
-        return redirect(url_for("groups"))
+        try:
+            # Insert the group
+            cur = conn.execute(
+                "INSERT INTO groups (name, description, creator_id) VALUES (?, ?, ?)",
+                (name, description, user_id)
+            )
+            group_id = cur.lastrowid
+            # Automatically add the creator as the first member
+            conn.execute(
+                "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)",
+                (group_id, user_id)
+            )
+            conn.commit()
+            flash(f"Group '{name}' created successfully!")
+            return redirect(url_for("groups"))
+        except Exception as e:
+            conn.rollback()
+            flash(f"Error creating group: {e}")
+        finally:
+            conn.close()
+            
     return render_template("create_group.html")
 
 @app.route("/group_chat/<int:group_id>", methods=["GET", "POST"])
