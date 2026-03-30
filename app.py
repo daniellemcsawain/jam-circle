@@ -207,7 +207,7 @@ def create_group():
         conn.execute("INSERT INTO group_members (group_id, user_id) VALUES (?,?)", (cur.lastrowid, session['user_id']))
         conn.commit()
         conn.close()
-        return redirect(url_for("groups"))
+        return redirect(url_for("group_chat.html"))
     return render_template("create_group.html")
 @app.route("/groups") # <--- Make sure this has the 's'
 @login_required
