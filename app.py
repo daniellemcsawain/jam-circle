@@ -214,6 +214,22 @@ def create_group():
         # SUCCESSFUL FIX: Redirect to the 'groups' function name
         return redirect(url_for("groups")) 
     return render_template("create_group.html")
+@app.route("/search_groups")
+@login_required
+def search_groups():
+    query = request.args.get("q", "")
+
+    conn = get_db_connection()
+
+    groups = conn.execute("""
+        SELECT id, name, description
+        FROM groups
+        WHERE name LIKE ?
+    """, (f"%{query}%",)).fetchall()
+
+    conn.close()
+
+    return render_template("groups.html", groups=groups)
 
 @app.route("/groups") # <--- Make sure this has the 's'
 @login_required
