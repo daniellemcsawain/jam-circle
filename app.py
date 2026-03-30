@@ -252,17 +252,6 @@ def search_groups():
 
     return render_template("groups.html", groups=groups)
 
-@app.route("/groups")
-@login_required
-def groups():
-    conn = get_db_connection()
-    # Updated query to prevent the .get() error in your logs
-    g_list = conn.execute("""
-        SELECT g.*, (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) as member_count 
-        FROM groups g
-    """).fetchall()
-    conn.close()
-    return render_template("groups.html", groups=g_list)
 
 @app.route("/group_chat/<int:group_id>", methods=["GET", "POST"])
 @login_required
