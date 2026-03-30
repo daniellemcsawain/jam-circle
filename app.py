@@ -914,9 +914,8 @@ def search():
 # GROUP ROUTES
 # -------------------------
 
-@app.route("/groups")
-@login_required
-def groups():
+@app.route("/group/<int:group_id>")
+def group_chat(group_id):
     conn = get_db_connection()
 
     groups = conn.execute("""
