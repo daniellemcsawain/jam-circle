@@ -2,49 +2,37 @@
 
 {% block content %}
 
-<section style="max-width:600px; margin:auto;">
+<section class="chat-container">
 
     <!-- HEADER -->
-    <div style="margin-bottom:16px;">
+    <div class="chat-header">
         <h2>@{{ other_user["username"] }}</h2>
     </div>
 
     <!-- CHAT BOX -->
-    <div id="chat-box" style="
-        height:400px;
-        overflow-y:auto;
-        display:flex;
-        flex-direction:column;
-        gap:10px;
-        margin-bottom:20px;
-    ">
+    <div id="chat-box" class="chat-box">
 
         {% for msg in messages %}
-            <div style="
-                display:flex;
-                justify-content:
+            <div class="message-row 
                 {% if msg['sender_id'] == session.get('user_id') %}
-                    flex-end
+                    sent
                 {% else %}
-                    flex-start
+                    received
                 {% endif %}
             ">
 
-                <div style="
-                    max-width:70%;
-                    padding:10px;
-                    border-radius:12px;
-                    background:
+                <div class="message-bubble">
+
+                    <!-- DELETE BUTTON -->
                     {% if msg['sender_id'] == session.get('user_id') %}
-                        #7ed957
-                    {% else %}
-                        #2a2a2a
+                        <form method="POST" action="{{ url_for('delete_message', message_id=msg['id']) }}">
+                            <button class="delete-btn">×</button>
+                        </form>
                     {% endif %}
-                ">
 
                     <!-- TEXT -->
                     {% if msg["content"] %}
-                        <p style="margin:0;">{{ msg["content"] }}</p>
+                        <p>{{ msg["content"] }}</p>
                     {% endif %}
 
                     <!-- IMAGE -->
@@ -52,15 +40,15 @@
                         {% if msg["file_type"] in ["jpg","jpeg","png","gif"] %}
                             <img 
                                 src="{{ url_for('uploaded_file', filename=msg['file_name']) }}" 
-                                style="max-width:200px; margin-top:8px; border-radius:10px;"
+                                class="chat-img"
                             >
                         {% endif %}
                     {% endif %}
 
                     <!-- TIME -->
-                    <p style="font-size:10px; opacity:0.6; margin-top:4px;">
+                    <span class="timestamp">
                         {{ msg["created_at"] }}
-                    </p>
+                    </span>
 
                 </div>
             </div>
@@ -69,37 +57,18 @@
     </div>
 
     <!-- MESSAGE FORM -->
-    <form method="POST" enctype="multipart/form-data" style="
-        display:flex;
-        gap:8px;
-        align-items:center;
-    ">
+    <form method="POST" enctype="multipart/form-data" class="chat-form">
 
         <input
             type="text"
             name="content"
-            placeholder="Message..."
-            style="
-                flex:1;
-                padding:10px;
-                border-radius:20px;
-                border:none;
-                background:#2a2a2a;
-                color:white;
-            "
+            placeholder="Type a message..."
+            autocomplete="off"
         >
 
         <input type="file" name="file" accept="image/*">
 
-        <button type="submit" style="
-            padding:10px 14px;
-            border-radius:20px;
-            border:none;
-            background:#7ed957;
-            font-weight:bold;
-        ">
-            Send
-        </button>
+        <button type="submit">Send</button>
 
     </form>
 
@@ -112,5 +81,125 @@
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 </script>
+
+<!-- STYLES -->
+<style>
+
+.chat-container {
+    max-width: 600px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+}
+
+.chat-header {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+}
+
+.chat-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* MESSAGE ROW */
+.message-row {
+    display: flex;
+}
+
+.message-row.sent {
+    justify-content: flex-end;
+}
+
+.message-row.received {
+    justify-content: flex-start;
+}
+
+/* MESSAGE BUBBLE */
+.message-bubble {
+    max-width: 70%;
+    padding: 10px;
+    border-radius: 16px;
+    position: relative;
+    word-wrap: break-word;
+}
+
+.sent .message-bubble {
+    background: #7ed957;
+    color: black;
+}
+
+.received .message-bubble {
+    background: #2a2a2a;
+    color: white;
+}
+
+/* DELETE BUTTON */
+.delete-btn {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    background: red;
+    border: none;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* IMAGE */
+.chat-img {
+    max-width: 200px;
+    margin-top: 8px;
+    border-radius: 10px;
+}
+
+/* TIME */
+.timestamp {
+    display: block;
+    font-size: 10px;
+    opacity: 0.6;
+    margin-top: 4px;
+}
+
+/* FORM */
+.chat-form {
+    display: flex;
+    gap: 6px;
+    padding: 10px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.chat-form input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border-radius: 20px;
+    border: none;
+    background: #2a2a2a;
+    color: white;
+}
+
+.chat-form input[type="file"] {
+    color: white;
+}
+
+.chat-form button {
+    padding: 10px 14px;
+    border-radius: 20px;
+    border: none;
+    background: #7ed957;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+</style>
 
 {% endblock %}
