@@ -209,7 +209,46 @@ def create_group():
         conn.close()
         return redirect(url_for("groups"))
     return render_template("create_group.html")
+@app.route("/groups") # <--- Make sure this has the 's'
+@login_required
+def groups():
+    conn = get_db_connection()
+    g_list = conn.execute("SELECT * FROM groups").fetchall()
+    conn.close()
+    return render_template("groups.html", groups=g_list)
+@app.route("/group_chat/<int:group_id>", methods=["GET", "POST"])
+@login_required
+def group_chat(group_id):
+    conn = get_db_connection()
+    
+    if request.method == "POST":
+        content = request.form.get("content")
+        file = request.files.get("chat_image") # Look for the image file
+        filename = None
+        
+        if file and file.filename != '':
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+        # Insert message into database with the filename
+        conn.execute(
+            "INSERT INTO messages (sender_id, group_id, content, file_name) VALUES (?, ?, ?, ?)",
+            (session["user_id"], group_id, content, filename)
+        )
+        conn.commit()
+    
+    # Get the group details and messages
+    group = conn.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
+    messages = conn.execute("""
+        SELECT m.*, u.username 
+        FROM messages m 
+        JOIN users u ON m.sender_id = u.id 
+        WHERE m.group_id = ? 
+        ORDER BY m.created_at ASC
+    """, (group_id,)).fetchall()
+    
+    conn.close()
+    return render_template("group_chat.html", group=group, messages=messages)
 # --- UTILS ---
 @app.route("/search")
 @login_required
