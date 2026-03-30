@@ -231,44 +231,45 @@ def private_messages(user_id):
 @login_required
 def groups():
     conn = get_db_connection()
-    g_list = conn.execute("SELECT g.*, (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) as member_count FROM groups g").fetchall()
+    # This query calculates the member count for every group
+    groups_list = conn.execute("""
+        SELECT g.*, COUNT(gm.id) as member_count 
+        FROM groups g 
+        LEFT JOIN group_members gm ON g.id = gm.group_id 
+        GROUP BY g.id
+    """).fetchall()
     conn.close()
-    return render_template("groups.html", groups=g_list)
+    return render_template("groups.html", groups=groups_list)
 
 @app.route("/create_group", methods=["GET", "POST"])
 @login_required
 def create_group():
     if request.method == "POST":
-        name = request.form.get('name')
-        description = request.form.get('description')
-        user_id = session.get('user_id')
+        name = request.form.get("name")
+        description = request.form.get("description")
         
-        if not name or not description:
-            flash("Please fill out all fields.")
-            return redirect(url_for('create_group'))
-
         conn = get_db_connection()
+        # This specific line adds the missing column if it isn't there yet
         try:
-            # Insert the group
-            cur = conn.execute(
-                "INSERT INTO groups (name, description, creator_id) VALUES (?, ?, ?)",
-                (name, description, user_id)
-            )
-            group_id = cur.lastrowid
-            # Automatically add the creator as the first member
-            conn.execute(
-                "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)",
-                (group_id, user_id)
-            )
-            conn.commit()
-            flash(f"Group '{name}' created successfully!")
-            return redirect(url_for("groups"))
-        except Exception as e:
-            conn.rollback()
-            flash(f"Error creating group: {e}")
-        finally:
-            conn.close()
+            conn.execute("ALTER TABLE groups ADD COLUMN creator_id INTEGER")
+        except:
+            pass # Column already exists, keep going
             
+        cur = conn.execute(
+            "INSERT INTO groups (name, description, creator_id) VALUES (?, ?, ?)",
+            (name, description, session["user_id"])
+        )
+        group_id = cur.lastrowid
+        
+        # Add creator as the first member
+        conn.execute(
+            "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)",
+            (group_id, session["user_id"])
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for("groups"))
+        
     return render_template("create_group.html")
 
 @app.route("/group_chat/<int:group_id>", methods=["GET", "POST"])
