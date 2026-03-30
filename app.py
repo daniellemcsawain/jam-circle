@@ -914,8 +914,8 @@ def search():
 # GROUP ROUTES
 # -------------------------
 
-@app.route("/group/<int:group_id>")
-def group_chat(group_id):
+@app.route("/groups")
+def groups():
     conn = get_db_connection()
 
     groups = conn.execute("""
@@ -927,13 +927,44 @@ def group_chat(group_id):
         FROM groups
         LEFT JOIN group_members 
             ON groups.id = group_members.group_id
-        GROUP BY groups.id, groups.name, groups.description
+        GROUP BY groups.id
     """).fetchall()
 
     conn.close()
 
     return render_template("groups.html", groups=groups)
+@app.route("/group/<int:group_id>", methods=["GET", "POST"])
+def group_chat(group_id):
+    conn = get_db_connection()
 
+    # SEND MESSAGE
+    if request.method == "POST":
+        content = request.form.get("content")
+
+        conn.execute("""
+            INSERT INTO group_messages (group_id, sender_id, content)
+            VALUES (?, ?, ?)
+        """, (group_id, session["user_id"], content))
+
+        conn.commit()
+
+    # GET MESSAGES
+    messages = conn.execute("""
+        SELECT group_messages.*, users.username
+        FROM group_messages
+        JOIN users ON group_messages.sender_id = users.id
+        WHERE group_id = ?
+        ORDER BY created_at ASC
+    """, (group_id,)).fetchall()
+
+    # GET GROUP INFO
+    group = conn.execute(
+        "SELECT * FROM groups WHERE id = ?", (group_id,)
+    ).fetchone()
+
+    conn.close()
+
+    return render_template("group_chat.html", messages=messages, group=group)
 
 @app.route("/groups/create", methods=["GET", "POST"])
 @login_required
