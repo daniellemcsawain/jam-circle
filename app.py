@@ -247,14 +247,6 @@ def followers_list(username): return render_template("followers_list.html", prof
 @login_required
 def following_list(username): return render_template("following_list.html", profile_user={"username":username}, users=[])
 
-@app.route("/post/delete/<int:post_id>", methods=["POST"])
-@login_required
-def delete_post(post_id):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM posts WHERE id = ? AND user_id = ?", (post_id, session["user_id"]))
-    conn.commit()
-    conn.close()
-    return redirect(url_for('home')) # This brings you back to the feed after deleting
 
 init_db()
 if __name__ == "__main__":
