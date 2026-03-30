@@ -23,29 +23,58 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
+    # This creates the tables with EVERY column needed for your HTML files
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, 
-            major TEXT, instrument TEXT, favorite_genre TEXT, bio TEXT, profile_image TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            username TEXT UNIQUE, 
+            password TEXT, 
+            major TEXT, 
+            instrument TEXT, 
+            favorite_genre TEXT, 
+            bio TEXT, 
+            profile_image TEXT
         );
         CREATE TABLE IF NOT EXISTS groups (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, description TEXT, creator_id INTEGER
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            name TEXT, 
+            description TEXT, 
+            creator_id INTEGER
         );
         CREATE TABLE IF NOT EXISTS group_members (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, group_id INTEGER, user_id INTEGER, UNIQUE(group_id, user_id)
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            group_id INTEGER, 
+            user_id INTEGER, 
+            UNIQUE(group_id, user_id)
         );
         CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, caption TEXT, clip_url TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            user_id INTEGER, 
+            caption TEXT, 
+            clip_url TEXT, 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS comments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER, user_id INTEGER, content TEXT, username TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            post_id INTEGER, 
+            user_id INTEGER, 
+            content TEXT, 
+            username TEXT
         );
         CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id INTEGER, receiver_id INTEGER, 
-            group_id INTEGER, content TEXT, file_name TEXT, file_type TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            sender_id INTEGER, 
+            receiver_id INTEGER, 
+            group_id INTEGER, 
+            content TEXT, 
+            file_name TEXT, 
+            file_type TEXT, 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS follows (
-            follower_id INTEGER, following_id INTEGER, PRIMARY KEY(follower_id, following_id)
+            follower_id INTEGER, 
+            following_id INTEGER, 
+            PRIMARY KEY(follower_id, following_id)
         );
     """)
     conn.commit()
