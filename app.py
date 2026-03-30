@@ -184,6 +184,10 @@ def join_group(group_id):
 # -------------------------
 # GROUP CHAT
 # -------------------------
+@app.route("/")
+def home():
+    return redirect(url_for("groups"))
+
 @app.route("/group/<int:group_id>", methods=["GET","POST"])
 @login_required
 def group_chat(group_id):
