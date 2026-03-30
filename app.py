@@ -248,7 +248,24 @@ def group_chat(group_id):
     """, (group_id,)).fetchall()
     
     conn.close()
-    return render_template("group_chat.html", group=group, messages=messages)
+    return render_template("groups", group=group, messages=messages)
+
+@app.route("/join_group/<int:group_id>", methods=["POST"])
+@login_required
+def join_group(group_id):
+    conn = get_db_connection()
+    try:
+        # This adds the student to the group
+        conn.execute("INSERT OR IGNORE INTO group_members (group_id, user_id) VALUES (?, ?)", 
+                     (group_id, session["user_id"]))
+        conn.commit()
+        flash("You joined the circle!")
+    except Exception as e:
+        flash("Could not join group.")
+    finally:
+        conn.close()
+    return redirect(url_for("groups"))
+
 # --- UTILS ---
 @app.route("/search")
 @login_required
